@@ -7,7 +7,7 @@
 | 2 — Document ingestion | COMPLETE | extract/chunk/dedupe/delete tests pass | 28 passed |
 | 3 — Embeddings + ChromaDB | COMPLETE | insert/search/filter/delete tests pass | 37 passed |
 | 4 — Retrieval + RAG | COMPLETE | retrieval + citation + no-context tests pass | 50 passed |
-| 5 — LLM providers | PENDING | provider switching + unavailable tests pass | — |
+| 5 — LLM providers | COMPLETE | provider switching + unavailable tests pass | 57 passed |
 | 6 — Electron frontend | PENDING | app launches, reaches backend | — |
 | 7 — Text chat | PENDING | typed question → answer + citations | — |
 | 8 — Whisper STT | PENDING | audio → editable transcription | — |
@@ -58,6 +58,15 @@
 - Known limitations: default provider is explicitly unavailable — answers need Stage 5 providers; no streaming endpoint yet; prompt is a single fixed template.
 - Next: Stage 5 — concrete LLM providers and capability endpoint.
 
+## Stage 5 report (2026-11-24)
+
+- Implemented: `MockProvider` (every answer labelled as a development test response, never genuine), generic OpenAI-compatible `HttpProvider` with configurable endpoint/key/model, streaming SSE support, explicit `CollegeProvider` that reports unconfigured with no invented API, provider registry, `GET /api/v1/config/capabilities`. Mock remains refused in production by config validation.
+- Files: `backend/app/llm/{mock,http_provider,college,factory}.py`, `backend/app/api/config.py`, `backend/tests/{test_llm_providers,test_capabilities_api}.py`.
+- Dependencies: none added (httpx already present).
+- Tests: `.venv/bin/python -m pytest tests -q` → **57 passed**. Fixed a recursive monkeypatch in the HTTP provider tests.
+- Known limitations: college adapter requires the real API specification; streaming is not yet exposed through the HTTP API; no provider-level retry/backoff.
+- Next: Stage 6 — Electron/React frontend with generated API types.
+
 ## Latest stage report
 
-_Stage 4 complete; 50 tests passing._
+_Stage 5 complete; 57 tests passing._

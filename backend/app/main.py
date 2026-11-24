@@ -13,6 +13,7 @@ from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.errors import install_error_handlers
 from app.core.logging import setup_logging
+from app.api.config import router as config_router
 from app.api.query import router as query_router
 from app.embeddings.base import EmbeddingProvider
 from app.embeddings.factory import get_embedder
@@ -77,6 +78,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(documents_router)
     app.include_router(query_router)
+    app.include_router(config_router)
     app.include_router(api_router)
 
     @app.get("/health", include_in_schema=False)
