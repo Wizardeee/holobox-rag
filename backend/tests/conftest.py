@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 import app.main as main_module
 from app.core.config import get_settings
-from tests.fakes import FakeEmbedder, FakeLLMProvider, FakeSTTProvider, FakeVectorStore
+from tests.fakes import FakeEmbedder, FakeLLMProvider, FakeSTTProvider, FakeTTSService, FakeVectorStore
 
 
 @pytest.fixture
@@ -17,6 +17,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(main_module, "create_vector_store", lambda settings: FakeVectorStore())
     monkeypatch.setattr(main_module, "create_llm_provider", lambda settings: FakeLLMProvider())
     monkeypatch.setattr(main_module, "create_stt_provider", lambda settings: FakeSTTProvider())
+    monkeypatch.setattr(main_module, "create_tts_service", lambda settings: FakeTTSService())
     get_settings.cache_clear()
     app = main_module.create_app()
     with TestClient(app) as test_client:

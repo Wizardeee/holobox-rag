@@ -87,6 +87,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/synthesize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Synthesize */
+        post: operations["synthesize_api_v1_synthesize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/config/capabilities": {
         parameters: {
             query?: never;
@@ -255,6 +272,13 @@ export interface components {
             excerpt: string;
             /** Score */
             score: number;
+        };
+        /** SynthesisRequest */
+        SynthesisRequest: {
+            /** Text */
+            text: string;
+            /** Voice */
+            voice?: string | null;
         };
         /** TranscriptionResponse */
         TranscriptionResponse: {
@@ -498,6 +522,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TranscriptionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    synthesize_api_v1_synthesize_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-User-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SynthesisRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

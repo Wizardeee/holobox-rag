@@ -11,7 +11,7 @@
 | 6 — Electron frontend | COMPLETE | app launches, reaches backend | smoke verified |
 | 7 — Text chat | COMPLETE | typed question → answer + citations | 58 passed; real integration test |
 | 8 — Whisper STT | COMPLETE | audio → editable transcription | 62 passed |
-| 9 — Piper TTS | PENDING | answer → cached audio, playback | — |
+| 9 — Piper TTS | COMPLETE | answer → cached audio, playback | 67 passed; real Piper verified |
 | 10 — Voice workflow | PENDING | full pipeline + text fallback | — |
 | 11 — Testing/packaging | PENDING | suite green, docs complete, Windows prep | — |
 
@@ -94,6 +94,15 @@
 - Known limitations: no audio-device selection UI; microphone permissions depend on OS/Electron prompts; no VAD or streaming transcription.
 - Next: Stage 9 — Piper text-to-speech.
 
+## Stage 9 report (2026-11-24)
+
+- Implemented: `TTSService` interface, Piper service launched as a subprocess with macOS dynamic-library path handling, SHA-256 content-hash WAV caching, POST `/api/v1/synthesize` returning `audio/wav`, graceful 503 when no voice is configured, voice discovery surfaced through capabilities. Frontend synthesis client and playback controls were already wired; regenerated OpenAPI types include `SynthesisRequest`/`TranscriptionResponse`.
+- Files: `backend/app/text_to_speech/{base,piper,factory}.py`, `backend/app/api/synthesis.py`, wiring, `backend/tests/{test_synthesis_api,test_piper}.py`, frontend type aliases and client.
+- Dependencies: none added. Verified the local maintained Piper binary and `en_US-lessac-medium` voice generate valid WAV audio.
+- Tests: `.venv/bin/python -m pytest tests -q` → **67 passed**, including a real Piper generation + cache check. Frontend build and contract check pass.
+- Known limitations: one configured voice by default; no audio-device selection; Piper binary is macOS-only here, Windows assets must be provisioned separately.
+- Next: Stage 10 — verify the complete voice workflow and text fallback.
+
 ## Latest stage report
 
-_Stage 8 complete; 62 tests passing._
+_Stage 9 complete; 67 tests passing._

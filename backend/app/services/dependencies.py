@@ -7,6 +7,7 @@ from app.ingestion.ingestor import Ingestor
 from app.rag.pipeline import RAGPipeline
 from app.services.repository import Repository
 from app.speech_to_text.base import STTProvider
+from app.text_to_speech.base import TTSService
 from app.vector_db.base import VectorStore
 
 
@@ -32,3 +33,7 @@ def get_pipeline(request: Request) -> RAGPipeline:
 
 def get_stt_provider(request: Request) -> STTProvider:
     return request.app.state.stt_provider
+
+
+def get_tts_service(request: Request) -> TTSService:
+    return request.app.state.tts_service

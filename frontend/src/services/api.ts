@@ -10,6 +10,7 @@ import type {
   QueryResponse,
   Scope,
   SourceReference,
+  SynthesisRequest,
   TranscriptionResponse,
 } from '../types/api';
 
@@ -46,7 +47,7 @@ export const api = {
       form: { audio, language: language || undefined },
     }),
 
-  synthesize: (body: { text: string; voice?: string }) =>
+  synthesize: (body: SynthesisRequest) =>
     request<number[]>('/api/v1/synthesize', { method: 'POST', body }),
 
   listConversations: () => request<ConversationSummary[]>('/api/v1/conversations'),

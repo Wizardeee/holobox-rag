@@ -7,6 +7,7 @@ from pathlib import Path
 from app.llm.base import LLMResponse
 from app.speech_to_text.base import TranscriptionResult
 from app.models.schemas import GenerationMode
+from tests.helpers import make_wav
 from app.vector_db.base import SearchHit
 
 
@@ -19,6 +20,20 @@ class FakeSTTProvider:
     def transcribe(self, audio_path: Path, language: str | None = None) -> TranscriptionResult:
         self.calls.append((audio_path, language))
         return TranscriptionResult(text="transcribed test audio", language=language or "en", duration_seconds=1.0)
+
+
+class FakeTTSService:
+    available = True
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str | None]] = []
+
+    def synthesize(self, text: str, voice: str | None = None) -> bytes:
+        self.calls.append((text, voice))
+        return make_wav()
+
+    def list_voices(self) -> list[str]:
+        return ["fake-voice"]
 
 
 class FakeLLMProvider:
