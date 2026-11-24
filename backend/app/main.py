@@ -1,0 +1,49 @@
+"""FastAPI application factory. No Electron or avatar imports, ever."""
+
+from contextlib import asynccontextmanager
+import logging
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app import __version__
+from app.api.health import router as health_router
+from app.api.router import api_router
+from app.core.config import get_settings
+from app.core.errors import install_error_handlers
+from app.core.logging import setup_logging
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    settings = get_settings()
+    settings.ensure_directories()
+    setup_logging(settings.environment)
+    logger.info("Holobox RAG backend %s ready (data dir: %s)", __version__, settings.data_dir)
+    yield
+
+
+def create_app() -> FastAPI:
+    settings = get_settings()
+    app = FastAPI(title="Holobox RAG API", version=__version__, lifespan=lifespan)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins_list,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    install_error_handlers(app)
+    app.include_router(health_router)
+    app.include_router(api_router)
+
+    @app.get("/health", include_in_schema=False)
+    def root_health():
+        return {"status": "ok", "version": __version__}
+
+    return app
+
+
+app = create_app()
