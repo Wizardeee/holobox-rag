@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Avatar } from '../components/Avatar';
 import { useKioskConversation } from '../hooks/useKioskConversation';
+import { usePersonDetection } from '../hooks/usePersonDetection';
 import { useSettings } from '../hooks/useSettings';
 import { api, errorMessage } from '../services/api';
 import type { CourseInfo } from '../types/api';
@@ -20,6 +21,16 @@ export function KioskApp() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [courseId, setCourseId] = useState<string | null>(null);
   const conversation = useKioskConversation(courseId, settings?.language || undefined);
+
+  const handleGreet = useCallback(() => {
+    if (!settings) return;
+    void conversation.greet(settings.greetingText);
+  }, [conversation.greet, settings]);
+  const { cameraStatus } = usePersonDetection(
+    settings,
+    conversation.state !== 'idle',
+    handleGreet,
+  );
 
   useEffect(() => {
     api.listCourses()
@@ -91,6 +102,9 @@ export function KioskApp() {
           </button>
         )}
         <span className="kiosk-current-course">Current course: <strong>{courseName}</strong></span>
+        {(cameraStatus === 'denied' || cameraStatus === 'unavailable') && settings?.personDetectionEnabled && (
+          <span className="kiosk-camera-note">Camera greeting unavailable — you can still ask questions.</span>
+        )}
       </footer>
     </div>
   );

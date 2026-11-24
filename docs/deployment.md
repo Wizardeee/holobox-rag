@@ -104,3 +104,9 @@ without TLS, a real identity provider and a security review.
 - 403 on kiosk query: selected course is not in `HOLOBOX_KIOSK_COURSES` or the document is unapproved.
 - Avatar blank: verify `dist/avatar/sabrina_3d_avatar.glb` exists and WebGL is enabled.
 - Microphone errors: grant microphone permission to Electron on the kiosk PC.
+- Camera greeting: optional and local-only; see `docs/PERSON_DETECTION.md`. A
+  camera-less kiosk needs no extra configuration — set
+  `HOLOBOX_PERSON_DETECTION_ENABLED=false` or simply leave no camera connected.
+  The WASM/model assets are bundled in `dist/mediapipe/` and served through the
+  app's local `holobox://assets/` protocol; no Python/vision packages are needed
+  on Windows.

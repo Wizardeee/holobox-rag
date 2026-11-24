@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, session } from 'electron';
+import { app, BrowserWindow, ipcMain, protocol, session } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -13,6 +13,12 @@ interface AppSettings {
   language: string;
   kioskToken: string;
   courseId: string;
+  personDetectionEnabled: boolean;
+  personDetectionConfidence: number;
+  personDetectionIntervalMs: number;
+  personPresenceMs: number;
+  personAbsenceMs: number;
+  greetingText: string;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -26,6 +32,13 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: '',
   kioskToken: process.env.HOLOBOX_KIOSK_TOKEN || '',
   courseId: process.env.HOLOBOX_KIOSK_COURSE || '',
+  // Optional camera greeting. Safe defaults; override via env for deployment.
+  personDetectionEnabled: process.env.HOLOBOX_PERSON_DETECTION_ENABLED !== 'false',
+  personDetectionConfidence: Number(process.env.HOLOBOX_PERSON_CONFIDENCE || 0.6),
+  personDetectionIntervalMs: Number(process.env.HOLOBOX_PERSON_INTERVAL_MS || 1000),
+  personPresenceMs: Number(process.env.HOLOBOX_PERSON_PRESENCE_MS || 2000),
+  personAbsenceMs: Number(process.env.HOLOBOX_PERSON_ABSENCE_MS || 5000),
+  greetingText: process.env.HOLOBOX_GREETING_TEXT || 'Hi, how can I help you today?',
 };
 
 interface FilePart {
@@ -41,6 +54,16 @@ interface ApiRequest {
   body?: unknown;
   form?: Record<string, string | FilePart | undefined>;
 }
+
+// Local-only scheme for bundled MediaPipe WASM/model assets. Electron's
+// file:// origin cannot fetch sibling files, so the renderer loads assets
+// through this trusted, non-network protocol. It never contacts a server.
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'holobox',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
+  },
+]);
 
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 
@@ -141,7 +164,20 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  // Microphone access is explicit and limited to media capabilities.
+  const assetRoot = process.env.VITE_DEV_SERVER_URL
+    ? path.join(__dirname, '..', 'public')
+    : path.join(__dirname, '..', 'dist');
+  protocol.registerFileProtocol('holobox', (request, callback) => {
+    const relative = decodeURIComponent(new URL(request.url).pathname).replace(/^\/+/, '');
+    const filePath = path.resolve(assetRoot, relative);
+    if (!filePath.startsWith(path.resolve(assetRoot))) {
+      callback({ statusCode: 403 });
+      return;
+    }
+    callback({ path: filePath });
+  });
+
+  // Media/camera permissions are explicit and limited to media capabilities.
   session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
     callback(permission === 'media');
   });

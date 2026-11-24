@@ -12,17 +12,26 @@ export interface KioskTurn {
 /** Owns the single audio element and drives avatar state from real events. */
 export function useKioskConversation(courseId: string | null, language?: string) {
   const [state, setState] = useState<AvatarState>('idle');
+  const [isGreeting, setGreeting] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [turn, setTurn] = useState<KioskTurn | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
 
+  const stateRef = useRef<AvatarState>('idle');
+  const greetingInFlight = useRef(false);
+  const greetingBytes = useRef<number[] | null>(null);
   const recorder = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
   const audio = useRef<HTMLAudioElement | null>(null);
   const audioContext = useRef<AudioContext | null>(null);
   const source = useRef<MediaElementAudioSourceNode | null>(null);
   const objectUrl = useRef<string | null>(null);
+
+  const setKioskState = useCallback((next: AvatarState) => {
+    stateRef.current = next;
+    setState(next);
+  }, []);
 
   const stopAudio = useCallback(() => {
     audio.current?.pause();
@@ -34,23 +43,10 @@ export function useKioskConversation(courseId: string | null, language?: string)
     setAnalyser(null);
   }, []);
 
-  const ask = useCallback(async (question: string) => {
-    const clean = question.trim();
-    if (!clean || !courseId) return;
-    setState('processing');
-    setError(null);
-    setTranscript(clean);
+  /** The ONE place that plays generated audio and feeds the avatar analyser. */
+  const playAudio = useCallback(async (bytes: number[], greeting: boolean): Promise<boolean> => {
+    stopAudio();
     try {
-      const response = await api.query({
-        question: clean,
-        owner_id: 'kiosk', // identity comes from the kiosk token on the backend
-        course_id: courseId,
-        include_sources: true,
-      });
-      setTurn({ question: clean, answer: response.answer, sources: response.sources });
-
-      const bytes = await api.synthesize({ text: response.answer });
-      stopAudio();
       objectUrl.current = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'audio/wav' }));
       const element = new Audio(objectUrl.current);
       audio.current = element;
@@ -67,20 +63,73 @@ export function useKioskConversation(courseId: string | null, language?: string)
 
       element.onended = () => {
         stopAudio();
-        setState('idle');
+        if (greeting) setGreeting(false);
+        setKioskState('idle');
       };
       element.onerror = () => {
         stopAudio();
+        if (greeting) setGreeting(false);
         setError('Audio playback failed.');
-        setState('error');
+        setKioskState('error');
       };
-      setState('speaking');
+      setKioskState('speaking');
       await element.play();
+      return true;
+    } catch (reason) {
+      stopAudio();
+      if (greeting) setGreeting(false);
+      setError(reason instanceof Error ? reason.message : String(reason));
+      setKioskState('error');
+      return false;
+    }
+  }, [setKioskState, stopAudio]);
+
+  const ask = useCallback(async (question: string): Promise<KioskTurn | null> => {
+    const clean = question.trim();
+    if (!clean || !courseId) return null;
+    setKioskState('processing');
+    setError(null);
+    setTranscript(clean);
+    try {
+      const response = await api.query({
+        question: clean,
+        owner_id: 'kiosk', // identity comes from the kiosk token on the backend
+        course_id: courseId,
+        include_sources: true,
+      });
+      const answer: KioskTurn = { question: clean, answer: response.answer, sources: response.sources };
+      setTurn(answer);
+      const bytes = await api.synthesize({ text: response.answer });
+      await playAudio(bytes, false);
+      return answer;
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
-      setState('error');
+      setKioskState('error');
+      return null;
     }
-  }, [courseId, stopAudio]);
+  }, [courseId, playAudio, setKioskState]);
+
+  /** Automatic greeting. Refuses to interrupt answers, recording or another greeting. */
+  const greet = useCallback(async (text: string): Promise<boolean> => {
+    if (greetingInFlight.current) return false;
+    if (stateRef.current !== 'idle' || recorder.current || audio.current) return false;
+    greetingInFlight.current = true;
+    try {
+      setError(null);
+      setTurn(null);
+      setGreeting(true);
+      const bytes = greetingBytes.current ?? await api.synthesize({ text });
+      greetingBytes.current = bytes; // backend also caches by text; this avoids repeat calls
+      return await playAudio(bytes, true);
+    } catch {
+      // A greeting failure is non-fatal: stay silent and let normal kiosk use continue.
+      setGreeting(false);
+      setKioskState('idle');
+      return false;
+    } finally {
+      greetingInFlight.current = false;
+    }
+  }, [playAudio, setKioskState]);
 
   const startListening = useCallback(async () => {
     setError(null);
@@ -95,7 +144,7 @@ export function useKioskConversation(courseId: string | null, language?: string)
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach((track) => track.stop());
         const blob = new Blob(chunks.current, { type: 'audio/webm' });
-        setState('processing');
+        setKioskState('processing');
         try {
           if (!blob.size) throw new Error('No audio was recorded');
           const result = await api.transcribe(
@@ -106,17 +155,17 @@ export function useKioskConversation(courseId: string | null, language?: string)
           await ask(result.text);
         } catch (reason) {
           setError(reason instanceof Error ? reason.message : String(reason));
-          setState('error');
+          setKioskState('error');
         }
       };
       recorder.current = mediaRecorder;
       mediaRecorder.start();
-      setState('listening');
+      setKioskState('listening');
     } catch (reason) {
       setError(`Microphone unavailable: ${reason instanceof Error ? reason.message : String(reason)}`);
-      setState('error');
+      setKioskState('error');
     }
-  }, [ask, language]);
+  }, [ask, language, setKioskState]);
 
   const stopListening = useCallback(() => {
     recorder.current?.stop();
@@ -125,13 +174,14 @@ export function useKioskConversation(courseId: string | null, language?: string)
 
   const stopSpeaking = useCallback(() => {
     stopAudio();
-    setState('idle');
-  }, [stopAudio]);
+    setGreeting(false);
+    setKioskState('idle');
+  }, [setKioskState, stopAudio]);
 
   const retry = useCallback(() => {
     setError(null);
-    setState('idle');
-  }, []);
+    setKioskState('idle');
+  }, [setKioskState]);
 
   useEffect(() => () => {
     recorder.current?.stop();
@@ -139,5 +189,8 @@ export function useKioskConversation(courseId: string | null, language?: string)
     void audioContext.current?.close();
   }, [stopAudio]);
 
-  return { state, transcript, turn, error, analyser, startListening, stopListening, stopSpeaking, retry, ask };
+  return {
+    state, isGreeting, transcript, turn, error, analyser,
+    startListening, stopListening, stopSpeaking, retry, ask, greet,
+  };
 }

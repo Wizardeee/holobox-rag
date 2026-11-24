@@ -181,6 +181,13 @@ Full evidence and limitations: `docs/IMPLEMENTATION_REPORT.md`.
 - Verified in Electron: real Piper WAV drove mouthOpen 0→0.73→0 and back to 0 on stop; eyes tracked left/right/up/down and returned to rest; real pointer events produced correct NDC and cleared on leave; 0 console errors; builds/type checks pass. Evidence in `docs/AVATAR_ANIMATION.md` and `docs/screenshots/`.
 - Not phoneme lip sync (asset has no visemes/jaw); no blinking (no eyelid controls); Windows untested.
 
+## Optional camera greeting (2026-11-25)
+
+- Added `src/hooks/usePersonDetection.ts` using locally bundled MediaPipe Tasks Vision `ObjectDetector` + EfficientDet-Lite0 (4.4 MB) at 1 fps; COCO `person` only, no identity/face recognition, no frames leave the device.
+- Added presence state machine (presence/absence confirmation, single greeting per visit), optional startup with graceful failure (no camera/permission/model → disabled, no repeated prompts), camera cleanup, and local `holobox://assets/` protocol in Electron main for bundled WASM/model files.
+- Added greeting playback to `useKioskConversation` reusing the single Piper audio element/analyser; guards prevent overlap, answering interruption and recording interference. Added configurable settings/env vars and a subtle unavailable note in the kiosk UI.
+- Verified: fake-camera person→blank→person sequence produced exactly one greeting per visit and no repeats; overlap/answer guards refused greetings; permission-denied injection produced one prompt, friendly note and working microphone; camera-less/disabled mode left kiosk fully functional; production build contains all 26 MB of local assets; 0 console errors; final smoke with real detector passed. No installer created.
+
 ## Latest stage report
 
-_Mouth animation and cursor eye tracking implemented and visually verified; backend/API unchanged._
+_Optional local camera greeting implemented and verified; kiosk remains fully functional without a camera._

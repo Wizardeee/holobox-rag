@@ -57,4 +57,10 @@ export interface AppSettings {
   language: string;
   kioskToken: string;
   courseId: string;
+  personDetectionEnabled: boolean;
+  personDetectionConfidence: number;
+  personDetectionIntervalMs: number;
+  personPresenceMs: number;
+  personAbsenceMs: number;
+  greetingText: string;
 }
