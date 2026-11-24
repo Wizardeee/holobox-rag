@@ -5,6 +5,7 @@ from fastapi import Request
 from app.core.config import Settings, get_settings
 from app.ingestion.ingestor import Ingestor
 from app.services.repository import Repository
+from app.vector_db.base import VectorStore
 
 
 def settings_dependency() -> Settings:
@@ -17,3 +18,7 @@ def get_repository(request: Request) -> Repository:
 
 def get_ingestor(request: Request) -> Ingestor:
     return request.app.state.ingestor
+
+
+def get_vector_store(request: Request) -> VectorStore:
+    return request.app.state.vector_store

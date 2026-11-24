@@ -5,7 +5,7 @@
 | 0 — Assessment & architecture | COMPLETE | Assessment, structure, roadmap, contract, risks | Approved 2026-11-24; spec committed; decisions in docs/architecture.md |
 | 1 — FastAPI foundation | COMPLETE | health + config + errors + tests pass | 12 passed |
 | 2 — Document ingestion | COMPLETE | extract/chunk/dedupe/delete tests pass | 28 passed |
-| 3 — Embeddings + ChromaDB | PENDING | insert/search/filter/delete tests pass | — |
+| 3 — Embeddings + ChromaDB | COMPLETE | insert/search/filter/delete tests pass | 37 passed |
 | 4 — Retrieval + RAG | PENDING | retrieval + citation + no-context tests pass | — |
 | 5 — LLM providers | PENDING | provider switching + unavailable tests pass | — |
 | 6 — Electron frontend | PENDING | app launches, reaches backend | — |
@@ -40,6 +40,15 @@
 - Known limitations: embeddings/vector index not wired yet (Stage 3); no re-index endpoint; extraction of scanned PDFs (images) yields empty text.
 - Next: Stage 3 — embeddings and ChromaDB.
 
+## Stage 3 report (2026-11-24)
+
+- Implemented: `EmbeddingProvider` and `VectorStore` interfaces, lazy Sentence Transformers embedder (`all-MiniLM-L6-v2`, 384-dim, normalized), ChromaDB persistent store with cosine space and ownership metadata, idempotent `Indexer`, automatic indexing on upload, vector cleanup on document delete.
+- Files: `backend/app/embeddings/{base,sentence_transformers,factory}.py`, `backend/app/vector_db/{base,chroma,factory}.py`, `backend/app/services/indexer.py`, wiring in `main.py`/`ingestor.py`/`documents.py`, `backend/tests/{fakes,test_embeddings,test_vector_db,test_indexer,test_indexing_api}.py`.
+- Dependencies: none added; verified ChromaDB 1.0.20 API against the installed package before use. Real embedding model downloaded and verified locally (384-dim).
+- Tests: `.venv/bin/python -m pytest tests -q` → **37 passed**. Fast deterministic fakes keep the suite at ~9 s; one test exercises the real model.
+- Known limitations: no re-index API yet; no metadata-only re-ranking; no change to retrieval scoring beyond cosine similarity.
+- Next: Stage 4 — retrieval and RAG pipeline with citations and no-context handling.
+
 ## Latest stage report
 
-_Stage 2 complete; 28 tests passing._
+_Stage 3 complete; 37 tests passing._

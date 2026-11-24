@@ -14,9 +14,10 @@ from app.services.repository import Repository, utcnow
 
 
 class Ingestor:
-    def __init__(self, settings: Settings, repository: Repository) -> None:
+    def __init__(self, settings: Settings, repository: Repository, indexer=None) -> None:
         self.settings = settings
         self.repository = repository
+        self.indexer = indexer
 
     def validate(self, filename: str, content: bytes) -> None:
         suffix = Path(filename).suffix.lower()
@@ -61,6 +62,8 @@ class Ingestor:
                 document_id,
                 [(uuid4().hex, chunk.page_number, chunk.text) for chunk in chunks],
             )
+            if self.indexer is not None:
+                self.indexer.index_document(document_id)
             self.repository.update_document(
                 document_id,
                 status=DocumentStatus.READY.value,

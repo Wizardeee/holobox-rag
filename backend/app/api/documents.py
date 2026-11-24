@@ -6,7 +6,8 @@ from app.core.errors import AppError
 from app.core.security import current_user, verify_token
 from app.ingestion.ingestor import Ingestor
 from app.models.schemas import DeletedResponse, DocumentInfo, Scope
-from app.services.dependencies import get_ingestor, get_repository
+from app.services.dependencies import get_ingestor, get_repository, get_vector_store
+from app.vector_db.base import VectorStore
 from app.services.repository import Repository
 
 router = APIRouter(
@@ -70,11 +71,10 @@ def delete_document(
     owner: str = Depends(current_user),
     repository: Repository = Depends(get_repository),
     ingestor: Ingestor = Depends(get_ingestor),
+    vector_store: VectorStore = Depends(get_vector_store),
 ) -> DeletedResponse:
     _get_visible(document_id, owner, repository, write=True)
-    vector_store = getattr(repository, "vector_store", None)
-    if vector_store is not None:
-        vector_store.delete_document(document_id)
+    vector_store.delete_document(document_id)
     ingestor.delete_files(document_id)
     repository.delete_document(document_id)
     return DeletedResponse(deleted=True)

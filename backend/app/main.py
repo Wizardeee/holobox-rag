@@ -13,10 +13,23 @@ from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.errors import install_error_handlers
 from app.core.logging import setup_logging
+from app.embeddings.base import EmbeddingProvider
+from app.embeddings.factory import get_embedder
 from app.ingestion.ingestor import Ingestor
+from app.services.indexer import Indexer
 from app.services.repository import Repository
+from app.vector_db.base import VectorStore
+from app.vector_db.factory import get_chroma_store
 
 logger = logging.getLogger(__name__)
+
+
+def create_embedder(settings) -> EmbeddingProvider:
+    return get_embedder(settings.embedding_model)
+
+
+def create_vector_store(settings) -> VectorStore:
+    return get_chroma_store(str(settings.chroma_dir), settings.chroma_collection)
 
 
 @asynccontextmanager
@@ -26,8 +39,12 @@ async def lifespan(app: FastAPI):
     setup_logging(settings.environment)
     repository = Repository(settings.database_path)
     repository.init()
+    embedder = create_embedder(settings)
+    vector_store = create_vector_store(settings)
     app.state.repository = repository
-    app.state.ingestor = Ingestor(settings, repository)
+    app.state.embedder = embedder
+    app.state.vector_store = vector_store
+    app.state.ingestor = Ingestor(settings, repository, Indexer(repository, embedder, vector_store))
     logger.info("Holobox RAG backend %s ready (data dir: %s)", __version__, settings.data_dir)
     yield
 
