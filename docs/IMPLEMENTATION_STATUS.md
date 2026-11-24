@@ -8,7 +8,7 @@
 | 3 — Embeddings + ChromaDB | COMPLETE | insert/search/filter/delete tests pass | 37 passed |
 | 4 — Retrieval + RAG | COMPLETE | retrieval + citation + no-context tests pass | 50 passed |
 | 5 — LLM providers | COMPLETE | provider switching + unavailable tests pass | 57 passed |
-| 6 — Electron frontend | PENDING | app launches, reaches backend | — |
+| 6 — Electron frontend | COMPLETE | app launches, reaches backend | smoke verified |
 | 7 — Text chat | PENDING | typed question → answer + citations | — |
 | 8 — Whisper STT | PENDING | audio → editable transcription | — |
 | 9 — Piper TTS | PENDING | answer → cached audio, playback | — |
@@ -67,6 +67,15 @@
 - Known limitations: college adapter requires the real API specification; streaming is not yet exposed through the HTTP API; no provider-level retry/backoff.
 - Next: Stage 6 — Electron/React frontend with generated API types.
 
+## Stage 6 report (2026-11-24)
+
+- Implemented: Electron main with `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, explicit media permission handler, narrow preload bridge, settings persisted in userData, all backend HTTP performed in main over IPC (no CORS, no credentials in renderer). React/TypeScript/Vite UI with Chat, Knowledge Base, History and Settings screens. OpenAPI → TypeScript generation with `npm run generate:api-types` and staleness check `npm run check:api-types`.
+- Files: `frontend/{package.json,tsconfig*.json,vite.config.ts,index.html}`, `frontend/electron/{main,preload}.ts`, `frontend/scripts/generate-api-types.mjs`, `frontend/src/**`, `shared/api-contracts/openapi.json`.
+- Dependencies: added npm devDependencies (Electron, Vite, React, TypeScript, electron-builder, openapi-typescript) — all declared, no UI framework.
+- Verification: `npm run build` and `npm run electron:build` pass; `npm run check:api-types` passes; backend started on 127.0.0.1:8000; Electron process launched successfully; backend log confirmed the renderer's health request arrived via IPC; CSP warning eliminated. GUI interactions were not automated.
+- Known limitations: no automated UI test harness yet; conversation/voice endpoints not in the OpenAPI snapshot until Stages 8–11, so their frontend types are currently local interfaces in `src/services/api.ts`.
+- Next: Stage 7 — verify the complete text workflow with real components.
+
 ## Latest stage report
 
-_Stage 5 complete; 57 tests passing._
+_Stage 6 complete; frontend builds and Electron smoke test passed._
