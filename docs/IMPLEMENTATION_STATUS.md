@@ -13,7 +13,7 @@
 | 8 — Whisper STT | COMPLETE | audio → editable transcription | 62 passed |
 | 9 — Piper TTS | COMPLETE | answer → cached audio, playback | 67 passed; real Piper verified |
 | 10 — Voice workflow | COMPLETE | full pipeline + text fallback | 72 passed |
-| 11 — Testing/packaging | PENDING | suite green, docs complete, Windows prep | — |
+| 11 — Testing/packaging | COMPLETE | suite green, docs complete, Windows prep | 72 passed; builds + docs verified |
 
 ## Stage 0 notes
 
@@ -112,6 +112,19 @@
 - Known limitations: no automated GUI test; microphone hardware permissions are OS-controlled; streaming is implemented in the HTTP provider but not exposed via a WebSocket endpoint.
 - Next: Stage 11 — final verification, documentation, packaging preparation.
 
+## Stage 11 report (2026-11-24)
+
+- Implemented: final documentation (`docs/setup.md`, `docs/api.md`, `docs/deployment.md`, `docs/TROUBLESHOOTING.md`), README refresh, protocol update, contract snapshot regeneration and frontend type regeneration. Windows packaging configuration (electron-builder NSIS) prepared; no Windows testing performed or claimed.
+- Files: docs listed above, `README.md`, `shared/communication-protocol/PROTOCOL.md`, regenerated `shared/api-contracts/openapi.json` and frontend generated types.
+- Dependencies: none added.
+- Tests: backend **72 passed**; frontend `npm run build`, `npm run electron:build`, `npm run check:api-types` pass; Electron smoke launch previously passed with backend health reaching the app via the preload bridge.
+- Known limitations: no GUI automation harness; Windows runtime unverified; college LLM adapter awaits real API documentation; WebSocket streaming endpoint not implemented (HTTP provider supports SSE internally).
+- Next steps: run on the actual Holobox Windows PC, provision Windows voice assets, and implement the college LLM adapter from its real specification.
+
+## Final state
+
+All 12 stages (0–11) complete. Backend runs; documents upload/index/delete; retrieval returns citations; LLM abstraction degrades honestly; Electron launches; text chat works end to end; Whisper STT and Piper TTS work; the full voice workflow passes; 72 automated tests pass; macOS setup documented; Windows packaging prepared but not verified.
+
 ## Latest stage report
 
-_Stage 10 complete; 72 tests passing._
+_Stage 11 complete; 72 tests passing; all stages complete._
