@@ -1,18 +1,24 @@
 """Central configuration. All values are overridable with HOLOBOX_* env vars."""
 
 from functools import lru_cache
+import os
 from pathlib import Path
+import shutil
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
+# Anchor to the backend folder so `uvicorn app.main:app` loads .env regardless
+# of the directory the process was started from.
+ENV_FILE = BACKEND_ROOT / ".env"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="HOLOBOX_",
-        env_file=".env",
+        env_file=ENV_FILE,
+        env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=False,
     )
@@ -73,6 +79,37 @@ class Settings(BaseSettings):
     @property
     def database_path(self) -> Path:
         return self.data_dir / "holobox.db"
+
+    @model_validator(mode="after")
+    def discover_piper(self) -> "Settings":
+        """Fall back to common local Piper locations when no env value is set.
+
+        Explicit HOLOBOX_PIPER_* values (including those in .env) always win.
+        """
+        home = Path.home()
+        if not self.piper_binary:
+            candidates = [
+                home / "Desktop" / "piper" / "macos-piper" / "bin" / "piper",
+                home / "Desktop" / "piper" / "piper",
+                home / ".local" / "bin" / "piper",
+            ]
+            on_path = shutil.which("piper")
+            if on_path:
+                candidates.append(Path(on_path))
+            for candidate in candidates:
+                if candidate.is_file() and os.access(candidate, os.X_OK):
+                    self.piper_binary = str(candidate)
+                    break
+        if not self.piper_voice:
+            candidates = [
+                home / "Desktop" / "piper" / "en_US-lessac-medium.onnx",
+                home / "Desktop" / "piper" / "voice.onnx",
+            ]
+            for candidate in candidates:
+                if candidate.is_file():
+                    self.piper_voice = str(candidate)
+                    break
+        return self
 
     @model_validator(mode="after")
     def reject_mock_in_production(self) -> "Settings":

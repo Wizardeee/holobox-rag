@@ -12,6 +12,8 @@ Full specification: [MASTER_SPEC.md](MASTER_SPEC.md) · Architecture: [docs/arch
 
 ## Quick start (macOS)
 
+Prerequisites: Ollama running with `llama3.2:latest` (`ollama serve`), and `backend/.env` copied from `.env.example` with this machine's Piper paths. The backend loads `.env` automatically — no shell exports needed. See `docs/setup.md`.
+
 ```bash
 # Backend
 cd backend

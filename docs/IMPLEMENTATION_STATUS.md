@@ -125,6 +125,23 @@
 
 All 12 stages (0–11) complete. Backend runs; documents upload/index/delete; retrieval returns citations; LLM abstraction degrades honestly; Electron launches; text chat works end to end; Whisper STT and Piper TTS work; the full voice workflow passes; 72 automated tests pass; macOS setup documented; Windows packaging prepared but not verified.
 
+## Post-build fixes (2026-11-24) — Piper configuration and real Ollama LLM
+
+**Piper root cause:** the backend had `env_file=".env"` resolved against the process working directory and no `backend/.env` existed, so `piper_binary`/`piper_voice` were always `None`. The binary path quoted in the report (`~/Desktop/piper/piper`) also does not exist; the installed executable is `~/Desktop/piper/macos-piper/bin/piper` (executable, loads via `@rpath` without extra `DYLD_LIBRARY_PATH`).
+
+**Fix:** anchored the env file to `BACKEND_ROOT / ".env"`, created the gitignored `backend/.env` with real paths, added a `Settings.discover_piper()` fallback for common local locations, and disabled ChromaDB anonymous telemetry. `.env.example` now documents Ollama/Piper placeholders with no machine-specific values committed.
+
+**Ollama selection:** benchmarked all installed chat models with the exact RAG prompt. Selected `llama3.2:latest` (3.2B, 2.6 GB loaded) — correct complete answers with citations in ~5 s, correct refusal on unrelated questions; `gemma3:1b` hallucinated, `llama3.2:1b` was incomplete, `nemotron-3-nano:4b` was correct but 16–25 s due to thinking mode, `qwen3:8b` excluded by size. `nomic-embed-text` was not used. Configured through the existing generic HTTP provider in `.env`; no new provider or dependency added.
+
+**Verification actually performed:**
+- `pytest tests -q` → **75 passed** (was 72; 3 new regression tests).
+- `/api/v1/config/capabilities` → `active_provider=http`, `llm_configured=true`, `tts_voices=["en_US-lessac-medium"]`, started with no shell exports.
+- Real `/api/v1/synthesize` → 200, valid 22,050 Hz mono WAV; repeat request returned byte-identical cached audio.
+- Real upload of `GPU_Project_Report.pdf` → 7 pages / 17 chunks; question "How many airports and routes are in the network, and which GPU was used?" → genuine answer "12 airports, 32 directed routes, Tesla T4" with 5 sources, `generation_mode=live`, no mock label. Unrelated question → 0 sources, `no_relevant_context`, no fabrication.
+- Real voice chain: Piper question WAV → Whisper transcription → Ollama answer → Piper answer WAV (6.88 s, valid WAV), no mock label.
+- Electron via DevTools Protocol: renderer fetched 97,440 WAV bytes through the preload bridge and the `<audio>` element reported `playing`.
+- Ollama loaded size measured at 2.6 GB with `ollama ps`; Chroma telemetry POSTs stopped after restart (0 occurrences in new log).
+
 ## Latest stage report
 
-_Stage 11 complete; 72 tests passing; all stages complete._
+_All stages complete plus Piper/Ollama fixes; 75 tests passing; real Ollama and Piper verified end to end._

@@ -61,4 +61,4 @@ tmp/                                    transient recordings, deleted after use
 - Embedding model loaded once at first use; CPU inference, ~90 MB.
 - Whisper model loaded on first transcription, `base` by default; configurable.
 - Piper runs as a subprocess with the local voice model; loaded per synthesis request, cached output by content hash.
-- No local LLM by default; answer generation is optional and provider-configured.
+- Answer generation is provider-configured. This machine uses local Ollama `llama3.2:latest` (3.2B, ~2.6 GB loaded) through the generic HTTP provider; keep only one Ollama model loaded at a time. No provider configured means honest `unavailable`, never mock fallback.

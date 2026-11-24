@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import logging
+import os
 
-import chromadb
+# ChromaDB sends anonymous usage events by default. Keep all runtime telemetry local.
+os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
+
+import chromadb  # noqa: E402  (telemetry flag must be set before import)
 
 from app.vector_db.base import SearchHit, VectorChunk
 

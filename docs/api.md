@@ -26,7 +26,9 @@ curl -s -X POST http://127.0.0.1:8000/api/v1/query \
   -d '{"question":"When does the library open?","owner_id":"local-user","include_sources":true}'
 ```
 
-`generation_mode` is `mock`, `live` or `unavailable`. `mock` answers are explicitly labelled as test output. When retrieval finds nothing, the response has `retrieved_context_available: false`, `warning: "no_relevant_context"` and a fixed honest answer.
+`generation_mode` is `mock`, `live` or `unavailable`. `mock` answers are explicitly labelled as test output and are forbidden in production. `live` means a real configured provider generated the answer — currently the local Ollama model `llama3.2:latest` through the generic OpenAI-compatible HTTP provider at `http://127.0.0.1:11434/v1`. If Ollama is stopped or out of memory, the response is `unavailable` with a `provider_error` warning and still includes retrieved `sources`; it never silently falls back to mock. When retrieval finds nothing, the response has `retrieved_context_available: false`, `warning: "no_relevant_context"` and a fixed honest answer.
+
+Provider selection lives in `backend/.env` (`HOLOBOX_LLM_PROVIDER`, `HOLOBOX_LLM_BASE_URL`, `HOLOBOX_LLM_MODEL`, `HOLOBOX_LLM_TIMEOUT_SECONDS`). The college provider and mock remain available but are never used implicitly.
 
 Errors: `{"detail":{"code":"...","message":"..."}}` with 400/403/404/413/415/422/500/503 as appropriate.
 

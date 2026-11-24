@@ -34,8 +34,21 @@ def test_piper_generates_and_caches_audio(service):
     assert len(list(service.settings.audio_cache_dir.glob("*.wav"))) == 1
 
 
-def test_piper_unavailable_without_configuration(tmp_path):
-    settings = Settings(data_dir=tmp_path / "data")
+def test_default_settings_expose_configured_piper_paths():
+    settings = Settings()
+    if not settings.piper_binary or not settings.piper_voice:
+        pytest.skip("No local Piper assets configured")
+    assert Path(settings.piper_binary).exists()
+    assert Path(settings.piper_voice).exists()
+    assert PiperTTSService(settings).available
+
+
+def test_piper_unavailable_when_configured_paths_are_missing(tmp_path):
+    settings = Settings(
+        data_dir=tmp_path / "data",
+        piper_binary="/nonexistent/piper",
+        piper_voice="/nonexistent/voice.onnx",
+    )
     settings.ensure_directories()
     with pytest.raises(TTSUnavailableError):
         PiperTTSService(settings).synthesize("hello")

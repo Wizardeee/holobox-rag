@@ -1,7 +1,12 @@
 import pytest
 from pydantic import ValidationError
 
-from app.core.config import Settings
+from app.core.config import BACKEND_ROOT, ENV_FILE, Settings
+
+
+def test_env_file_is_anchored_to_backend_directory():
+    # Config must load backend/.env even when uvicorn starts from another cwd.
+    assert ENV_FILE == BACKEND_ROOT / ".env"
 
 
 def test_mock_provider_rejected_in_production():

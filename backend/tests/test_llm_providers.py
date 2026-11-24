@@ -83,10 +83,27 @@ def test_college_provider_reports_unconfigured():
     assert provider.is_configured is False
 
 
+def test_unreachable_provider_never_falls_back_to_mock():
+    provider = get_llm_provider(
+        Settings(
+            llm_provider="http",
+            llm_base_url="http://127.0.0.1:9/v1",
+            llm_timeout_seconds=1.0,
+        )
+    )
+    response = provider.generate("question")
+    assert provider.id != "mock"
+    assert response.mode == GenerationMode.UNAVAILABLE
+    assert response.warning.startswith("provider_error")
+
+
 def test_provider_selection():
     assert isinstance(get_llm_provider(Settings(llm_provider="mock")), MockProvider)
     assert isinstance(get_llm_provider(Settings(llm_provider="college")), CollegeProvider)
-    assert isinstance(get_llm_provider(Settings(llm_provider="http")), UnavailableProvider)
+    assert isinstance(
+        get_llm_provider(Settings(llm_provider="http", llm_base_url=None)),
+        UnavailableProvider,
+    )
     assert isinstance(
         get_llm_provider(Settings(llm_provider="http", llm_base_url="http://llm.local")),
         HttpProvider,
