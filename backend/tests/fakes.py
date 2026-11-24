@@ -2,7 +2,29 @@
 
 import hashlib
 
+from app.llm.base import LLMResponse
+from app.models.schemas import GenerationMode
 from app.vector_db.base import SearchHit
+
+
+class FakeLLMProvider:
+    id = "fake"
+    mode = GenerationMode.MOCK
+    is_configured = True
+    supports_streaming = False
+
+    def __init__(self, response: str | None = None, error: Exception | None = None, *, live=False) -> None:
+        self.response = response or "Based on the documents, [1] confirms the answer."
+        self.error = error
+        self.calls: list[str] = []
+        if live:
+            self.mode = GenerationMode.LIVE
+
+    def generate(self, prompt: str, *, timeout: float | None = None) -> LLMResponse:
+        self.calls.append(prompt)
+        if self.error:
+            raise self.error
+        return LLMResponse(text=self.response, mode=self.mode)
 
 
 class FakeEmbedder:

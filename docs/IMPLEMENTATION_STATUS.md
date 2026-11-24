@@ -6,7 +6,7 @@
 | 1 — FastAPI foundation | COMPLETE | health + config + errors + tests pass | 12 passed |
 | 2 — Document ingestion | COMPLETE | extract/chunk/dedupe/delete tests pass | 28 passed |
 | 3 — Embeddings + ChromaDB | COMPLETE | insert/search/filter/delete tests pass | 37 passed |
-| 4 — Retrieval + RAG | PENDING | retrieval + citation + no-context tests pass | — |
+| 4 — Retrieval + RAG | COMPLETE | retrieval + citation + no-context tests pass | 50 passed |
 | 5 — LLM providers | PENDING | provider switching + unavailable tests pass | — |
 | 6 — Electron frontend | PENDING | app launches, reaches backend | — |
 | 7 — Text chat | PENDING | typed question → answer + citations | — |
@@ -49,6 +49,15 @@
 - Known limitations: no re-index API yet; no metadata-only re-ranking; no change to retrieval scoring beyond cosine similarity.
 - Next: Stage 4 — retrieval and RAG pipeline with citations and no-context handling.
 
+## Stage 4 report (2026-11-24)
+
+- Implemented: scope-filtered retrieval with query embeddings, grounded prompt template, RAG pipeline with source references and strict no-context answer, graceful generation failure handling, conversation persistence, POST `/api/v1/query` with ownership enforcement.
+- Files: `backend/app/retrieval/retriever.py`, `backend/app/rag/{prompts,pipeline}.py`, `backend/app/llm/{base,unavailable,factory}.py`, `backend/app/api/query.py`, service wiring, `backend/tests/{test_retriever,test_rag_pipeline,test_query_api}.py`.
+- Dependencies: none added.
+- Tests: `.venv/bin/python -m pytest tests -q` → **50 passed**. Fixed one incorrect test that matched header and body owners by mistake.
+- Known limitations: default provider is explicitly unavailable — answers need Stage 5 providers; no streaming endpoint yet; prompt is a single fixed template.
+- Next: Stage 5 — concrete LLM providers and capability endpoint.
+
 ## Latest stage report
 
-_Stage 3 complete; 37 tests passing._
+_Stage 4 complete; 50 tests passing._

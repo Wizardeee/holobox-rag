@@ -13,9 +13,14 @@ from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.errors import install_error_handlers
 from app.core.logging import setup_logging
+from app.api.query import router as query_router
 from app.embeddings.base import EmbeddingProvider
 from app.embeddings.factory import get_embedder
 from app.ingestion.ingestor import Ingestor
+from app.llm.base import LLMProvider
+from app.llm.factory import get_llm_provider
+from app.rag.pipeline import RAGPipeline
+from app.retrieval.retriever import Retriever
 from app.services.indexer import Indexer
 from app.services.repository import Repository
 from app.vector_db.base import VectorStore
@@ -32,6 +37,10 @@ def create_vector_store(settings) -> VectorStore:
     return get_chroma_store(str(settings.chroma_dir), settings.chroma_collection)
 
 
+def create_llm_provider(settings) -> LLMProvider:
+    return get_llm_provider(settings)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
@@ -45,6 +54,11 @@ async def lifespan(app: FastAPI):
     app.state.embedder = embedder
     app.state.vector_store = vector_store
     app.state.ingestor = Ingestor(settings, repository, Indexer(repository, embedder, vector_store))
+    provider = create_llm_provider(settings)
+    retriever = Retriever(repository, embedder, vector_store, settings)
+    app.state.retriever = retriever
+    app.state.llm_provider = provider
+    app.state.pipeline = RAGPipeline(retriever, provider, repository, settings)
     logger.info("Holobox RAG backend %s ready (data dir: %s)", __version__, settings.data_dir)
     yield
 
@@ -62,6 +76,7 @@ def create_app() -> FastAPI:
     install_error_handlers(app)
     app.include_router(health_router)
     app.include_router(documents_router)
+    app.include_router(query_router)
     app.include_router(api_router)
 
     @app.get("/health", include_in_schema=False)
