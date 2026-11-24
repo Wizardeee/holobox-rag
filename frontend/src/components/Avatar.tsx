@@ -87,7 +87,7 @@ export function Avatar({ state, analyser }: Props) {
         bounds = new THREE.Box3().setFromObject(model, true);
         frame();
 
-        controller.current = new AvatarController(model, gltf.animations);
+        controller.current = new AvatarController(model, gltf.animations, camera);
         setStatus('ready');
       },
       undefined,
@@ -111,6 +111,20 @@ export function Avatar({ state, analyser }: Props) {
     observer.observe(element);
     resize();
 
+    // Eye tracking: normalize cursor to this viewport (NDC) and hand it to the
+    // controller. Leaving the window returns the eyes to their rest direction.
+    const onPointerMove = (event: PointerEvent) => {
+      const rect = element.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+      controller.current?.setCursor(x, y);
+    };
+    const onPointerLeave = () => controller.current?.setCursor(null, null);
+    element.addEventListener('pointermove', onPointerMove);
+    element.addEventListener('pointerleave', onPointerLeave);
+    window.addEventListener('blur', onPointerLeave);
+
     const renderFrame = () => {
       animationId = requestAnimationFrame(renderFrame);
       controller.current?.update(clock.getDelta(), clock.elapsedTime);
@@ -122,6 +136,9 @@ export function Avatar({ state, analyser }: Props) {
       disposed = true;
       cancelAnimationFrame(animationId);
       observer.disconnect();
+      element.removeEventListener('pointermove', onPointerMove);
+      element.removeEventListener('pointerleave', onPointerLeave);
+      window.removeEventListener('blur', onPointerLeave);
       frameModel.current = null;
       controller.current?.dispose();
       controller.current = null;

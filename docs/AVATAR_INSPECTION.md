@@ -45,7 +45,10 @@ Phoneme-accurate and even jaw-accurate lip sync is **not possible** with this as
 1. Play the actual Piper WAV through a single `HTMLAudioElement` owned by the kiosk hook.
 2. Feed that element into a Web Audio `AnalyserNode`; drive subtle **head nod / posture motion** from the measured RMS amplitude while audio is playing.
 3. Show an explicit on-screen "speaking" indicator in the kiosk UI.
-4. No mouth mesh, teeth mesh or facial bone is displaced — doing so would distort the model and would not be real lip sync.
+4. **Update (2026-11-25):** a *runtime* morph target now parts the model's own
+   lip vertices while the analyser reports speech, so the mouth visibly opens
+   and closes. This is still amplitude-driven — **not phoneme lip sync** — and
+   no face mesh is replaced or the GLB modified. See `docs/AVATAR_ANIMATION.md`.
 
 This will be documented in the final report as **amplitude-driven speaking animation, not phoneme lip sync**. If a viseme-capable avatar is supplied later, only `AvatarController` needs a new driver; the kiosk/audio/RAG code is unaffected.
 

@@ -175,6 +175,12 @@ Full evidence and limitations: `docs/IMPLEMENTATION_REPORT.md`.
 - Fixed in `frontend/index.html`, `frontend/src/components/Avatar.tsx`, `frontend/src/kiosk/kiosk.css`. Added `docs/AVATAR_RENDERING_FIX.md` and screenshots in `docs/screenshots/`.
 - Verified in Electron via CDP: 8/8 material maps loaded, 0 console errors, canvas CSS size matches layout, centred framing at 1920×1080/1536×864/1366×768, original colours visible, RAG/Ollama/Piper playback `playing`, mic transition to Listening, builds and API-type check pass. No backend or asset changes.
 
+## Avatar animation extension (2026-11-25)
+
+- Added runtime lip morph (`src/avatar/mouthMorph.ts`) driven by the existing Piper analyser; mouth opens/closes with speech and closes on stop. Added eye-bone cursor tracking in `AvatarController` using camera-ray gaze, ±14° clamp and post-mixer assignment; pointer listeners in `Avatar.tsx` with cleanup.
+- Verified in Electron: real Piper WAV drove mouthOpen 0→0.73→0 and back to 0 on stop; eyes tracked left/right/up/down and returned to rest; real pointer events produced correct NDC and cleared on leave; 0 console errors; builds/type checks pass. Evidence in `docs/AVATAR_ANIMATION.md` and `docs/screenshots/`.
+- Not phoneme lip sync (asset has no visemes/jaw); no blinking (no eyelid controls); Windows untested.
+
 ## Latest stage report
 
-_Avatar rendering corrected and visually verified; two-interface architecture unchanged; Windows/physical hardware still not run._
+_Mouth animation and cursor eye tracking implemented and visually verified; backend/API unchanged._
