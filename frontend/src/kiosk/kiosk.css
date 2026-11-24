@@ -8,7 +8,7 @@ body { margin: 0; overflow: hidden; }
 button, select { font: inherit; }
 .kiosk-root { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: radial-gradient(circle at 50% 45%, #16283f 0%, #060d17 65%); }
 .avatar-host { position: absolute; inset: 0; display: grid; place-items: center; }
-.avatar-host canvas { display: block; }
+.avatar-host canvas { display: block; width: 100%; height: 100%; }
 .avatar-status { position: absolute; bottom: 22%; color: #9fb3c9; font-size: 14px; }
 .kiosk-top { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 28px; padding: 26px 40px; background: linear-gradient(#060d17cc, transparent); }
 .kiosk-brand { font-weight: 800; letter-spacing: .22em; font-size: 15px; }

@@ -169,6 +169,12 @@ All 12 stages (0–11) complete. Backend runs; documents upload/index/delete; re
 
 Full evidence and limitations: `docs/IMPLEMENTATION_REPORT.md`.
 
+## Avatar visual correction (2026-11-25)
+
+- Root causes: `renderer.setSize(..., false)` left a 2×-DPR canvas overflowing and clipped (avatar pushed right); CSP blocked `blob:` fetches for the GLB's 11 embedded textures, so all materials stayed white; lighting (1.6/2.2/1.1, no tone mapping) then blew them out.
+- Fixed in `frontend/index.html`, `frontend/src/components/Avatar.tsx`, `frontend/src/kiosk/kiosk.css`. Added `docs/AVATAR_RENDERING_FIX.md` and screenshots in `docs/screenshots/`.
+- Verified in Electron via CDP: 8/8 material maps loaded, 0 console errors, canvas CSS size matches layout, centred framing at 1920×1080/1536×864/1366×768, original colours visible, RAG/Ollama/Piper playback `playing`, mic transition to Listening, builds and API-type check pass. No backend or asset changes.
+
 ## Latest stage report
 
-_Two-interface architecture complete; 88 tests passing; Windows/physical hardware tests remain explicitly not run._
+_Avatar rendering corrected and visually verified; two-interface architecture unchanged; Windows/physical hardware still not run._
