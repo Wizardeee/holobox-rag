@@ -9,7 +9,7 @@
 | 4 — Retrieval + RAG | COMPLETE | retrieval + citation + no-context tests pass | 50 passed |
 | 5 — LLM providers | COMPLETE | provider switching + unavailable tests pass | 57 passed |
 | 6 — Electron frontend | COMPLETE | app launches, reaches backend | smoke verified |
-| 7 — Text chat | PENDING | typed question → answer + citations | — |
+| 7 — Text chat | COMPLETE | typed question → answer + citations | 58 passed; real integration test |
 | 8 — Whisper STT | PENDING | audio → editable transcription | — |
 | 9 — Piper TTS | PENDING | answer → cached audio, playback | — |
 | 10 — Voice workflow | PENDING | full pipeline + text fallback | — |
@@ -76,6 +76,15 @@
 - Known limitations: no automated UI test harness yet; conversation/voice endpoints not in the OpenAPI snapshot until Stages 8–11, so their frontend types are currently local interfaces in `src/services/api.ts`.
 - Next: Stage 7 — verify the complete text workflow with real components.
 
+## Stage 7 report (2026-11-24)
+
+- Implemented: complete text workflow verified through the real stack (upload → real MiniLM embeddings → real ChromaDB → retrieval → labelled mock answer → citations → deletion). Added a calibrated retrieval score threshold (0.15) so unrelated questions return the honest no-context answer instead of weak matches. Frontend chat, composer, citations, mock banner and conversation wiring were completed in Stage 6.
+- Files: `backend/tests/test_real_integration.py`, `backend/app/core/config.py`, `backend/.env.example`.
+- Dependencies: none added.
+- Tests: `.venv/bin/python -m pytest tests -q` → **58 passed**, including the real-component integration test. Frontend `npm run build` and `npm run check:api-types` passed in Stage 6.
+- Known limitations: GUI interaction was not automated; no E2E browser test harness. Voice stages remain.
+- Next: Stage 8 — Whisper speech-to-text.
+
 ## Latest stage report
 
-_Stage 6 complete; frontend builds and Electron smoke test passed._
+_Stage 7 complete; 58 tests passing._

@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     chunk_size: int = Field(default=800, ge=100, le=4000)
     chunk_overlap: int = Field(default=120, ge=0, le=500)
     retrieval_top_k: int = Field(default=5, ge=1, le=20)
-    retrieval_min_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    retrieval_min_score: float = Field(default=0.15, ge=0.0, le=1.0)
 
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     chroma_collection: str = "holobox_chunks"
