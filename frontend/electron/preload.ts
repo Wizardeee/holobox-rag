@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld('holobox', {
     ipcRenderer.invoke('api:request', { path, ...options }),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   setSettings: (patch: Record<string, unknown>) => ipcRenderer.invoke('settings:set', patch),
+  openConfigFile: () => ipcRenderer.invoke('config:open'),
   getAppInfo: () => ipcRenderer.invoke('app:info'),
 });

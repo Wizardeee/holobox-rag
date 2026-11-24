@@ -40,23 +40,22 @@ export interface FilePart {
 }
 
 export interface ApiOptions {
-  method?: 'GET' | 'POST' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   query?: Record<string, string | number | undefined>;
   body?: unknown;
   form?: Record<string, string | FilePart | undefined>;
 }
 
+/** Settings safe to expose to the renderer. Never contains tokens or backend URL. */
 export interface AppSettings {
-  backendUrl: string;
-  apiToken: string;
-  userId: string;
+  backendUrlConfigured: boolean;
+  configPath: string;
+  courseId: string;
   voiceInputEnabled: boolean;
   voiceOutputEnabled: boolean;
   sttModel: string;
   ttsVoice: string;
   language: string;
-  kioskToken: string;
-  courseId: string;
   personDetectionEnabled: boolean;
   personDetectionConfidence: number;
   personDetectionIntervalMs: number;

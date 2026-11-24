@@ -16,10 +16,11 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export function KioskApp() {
-  const { settings, update } = useSettings();
+  const { settings, update, reload } = useSettings();
   const [courses, setCourses] = useState<CourseInfo[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [courseId, setCourseId] = useState<string | null>(null);
+  const [online, setOnline] = useState<boolean | null>(null);
   const conversation = useKioskConversation(courseId, settings?.language || undefined);
 
   const handleGreet = useCallback(() => {
@@ -32,18 +33,59 @@ export function KioskApp() {
     handleGreet,
   );
 
-  useEffect(() => {
-    api.listCourses()
-      .then((items) => {
-        setCourses(items);
-        setCourseId((current) => (current && items.some((item) => item.id === current) ? current : items[0]?.id ?? null));
-      })
-      .catch((reason) => setLoadError(errorMessage(reason)));
+  const loadCourses = useCallback(async () => {
+    setLoadError(null);
+    try {
+      const [items] = await Promise.all([
+        api.listCourses(),
+        api.health().then(() => setOnline(true)).catch(() => setOnline(false)),
+      ]);
+      setCourses(items);
+      setCourseId((current) =>
+        current && items.some((item) => item.id === current) ? current : items[0]?.id ?? null,
+      );
+    } catch (reason) {
+      setOnline(false);
+      setLoadError(errorMessage(reason));
+    }
   }, []);
+
+  useEffect(() => {
+    if (settings?.backendUrlConfigured) void loadCourses();
+  }, [settings?.backendUrlConfigured, loadCourses]);
+
+  const retry = useCallback(async () => {
+    conversation.retry();
+    const next = await reload();
+    if (next.backendUrlConfigured) await loadCourses();
+  }, [conversation, loadCourses, reload]);
 
   if (!settings) return <div className="kiosk-boot">Starting Holobox…</div>;
 
+  if (!settings.backendUrlConfigured) {
+    return (
+      <div className="kiosk-setup">
+        <h1>Setup required</h1>
+        <p>This kiosk needs the address of the Holobox backend computer.</p>
+        <ol>
+          <li>Open the configuration file with Notepad.</li>
+          <li>Set <code>backendUrl</code> to the MacBook address, for example <code>http://192.0.2.10:8000</code>.</li>
+          <li>Set <code>kioskToken</code> to the credential supplied by the administrator.</li>
+          <li>Save the file, then press “Reload configuration”.</li>
+        </ol>
+        <code className="kiosk-setup-path">{settings.configPath}</code>
+        <div className="kiosk-setup-actions">
+          <button onClick={() => void window.holobox.openConfigFile()}>Open configuration file</button>
+          <button onClick={() => void retry()}>Reload configuration</button>
+        </div>
+      </div>
+    );
+  }
+
   const courseName = courses.find((item) => item.id === courseId)?.name ?? 'No course selected';
+  const statusText = online === false
+    ? 'Backend unavailable — check the network connection'
+    : STATUS_LABEL[conversation.state];
 
   return (
     <div className="kiosk-root">
@@ -67,7 +109,7 @@ export function KioskApp() {
             ))}
           </select>
         </label>
-        <span className={`kiosk-status status-${conversation.state}`}>{STATUS_LABEL[conversation.state]}</span>
+        <span className={`kiosk-status status-${online === false ? 'offline' : conversation.state}`}>{statusText}</span>
       </header>
 
       {conversation.state === 'listening' && <div className="kiosk-pulse" aria-hidden="true" />}
@@ -83,7 +125,7 @@ export function KioskApp() {
       {(loadError || conversation.error) && (
         <div className="kiosk-error">
           <span>{loadError || conversation.error}</span>
-          <button onClick={conversation.retry}>Try again</button>
+          <button onClick={() => void retry()}>Try again</button>
         </div>
       )}
 
@@ -96,13 +138,13 @@ export function KioskApp() {
           <button
             className="kiosk-mic"
             onClick={() => void conversation.startListening()}
-            disabled={!courseId || conversation.state === 'processing'}
+            disabled={!courseId || online === false || conversation.state === 'processing'}
           >
             <span className="mic-dot" /> Ask a question
           </button>
         )}
         <span className="kiosk-current-course">Current course: <strong>{courseName}</strong></span>
-        {(cameraStatus === 'denied' || cameraStatus === 'unavailable') && settings?.personDetectionEnabled && (
+        {(cameraStatus === 'denied' || cameraStatus === 'unavailable') && settings.personDetectionEnabled && (
           <span className="kiosk-camera-note">Camera greeting unavailable — you can still ask questions.</span>
         )}
       </footer>

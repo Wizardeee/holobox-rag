@@ -110,3 +110,13 @@ without TLS, a real identity provider and a security review.
   The WASM/model assets are bundled in `dist/mediapipe/` and served through the
   app's local `holobox://assets/` protocol; no Python/vision packages are needed
   on Windows.
+
+## F. Windows kiosk installer (built, not Windows-tested)
+
+`electron-builder` NSIS produces `frontend/installer/Holobox-Kiosk-0.1.0-x64.exe`
+(`npm run dist:win`). The Windows PC runs only Electron + the bundled frontend,
+Three.js avatar, MediaPipe WASM/model and local camera greeting. Configure the
+MacBook LAN URL and kiosk token in `%APPDATA%\Holobox Kiosk\kiosk-config.json`;
+no rebuild is needed. Full instructions and the Windows hardware verification
+checklist are in `docs/WINDOWS_KIOSK_INSTALLATION.md`. The actual mini PC was
+not available, so Windows execution remains unverified.

@@ -18,5 +18,11 @@ export function useSettings() {
     return next;
   }, []);
 
-  return { settings, update, error };
+  const reload = useCallback(async () => {
+    const next = await window.holobox.getSettings();
+    setSettings(next);
+    return next;
+  }, []);
+
+  return { settings, update, reload, error };
 }

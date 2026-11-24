@@ -1,7 +1,10 @@
 {
-  "name": "holobox-rag-frontend",
+  "name": "holobox-kiosk",
   "version": "0.1.0",
+  "description": "Holobox student kiosk — local frontend for the Holobox RAG backend",
+  "author": "Holobox Project",
   "private": true,
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "dev:teacher": "vite --port 5174",
@@ -9,6 +12,7 @@
     "electron:build": "tsc -p tsconfig.electron.json",
     "electron": "electron dist-electron/main.js",
     "dist": "npm run build && npm run electron:build && electron-builder",
+    "dist:win": "npm run build && npm run electron:build && electron-builder --win --x64 -p never",
     "generate:api-types": "node scripts/generate-api-types.mjs",
     "check:api-types": "node scripts/generate-api-types.mjs --check"
   },
@@ -31,17 +35,40 @@
     "vite": "^6.0.5"
   },
   "build": {
-    "appId": "com.holobox.rag",
-    "productName": "Holobox RAG",
+    "appId": "com.holobox.kiosk",
+    "productName": "Holobox Kiosk",
     "files": [
       "dist/**",
-      "dist-electron/**"
+      "dist-electron/**",
+      "package.json"
     ],
+    "directories": {
+      "buildResources": "build",
+      "output": "installer"
+    },
+    "icon": "build/icon.ico",
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "build/icon.png"
     },
     "win": {
-      "target": "nsis"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "Holobox-Kiosk-${version}-x64.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Holobox Kiosk",
+      "deleteAppDataOnUninstall": false
     }
   }
 }

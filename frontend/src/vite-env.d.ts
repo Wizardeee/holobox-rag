@@ -8,6 +8,7 @@ declare global {
       api<T>(path: string, options?: ApiOptions): Promise<ApiResult<T>>;
       getSettings(): Promise<AppSettings>;
       setSettings(patch: Partial<AppSettings>): Promise<AppSettings>;
+      openConfigFile(): Promise<boolean>;
       getAppInfo(): Promise<{ version: string; platform: string }>;
     };
   }
