@@ -73,7 +73,7 @@ export function useChat(userId: string) {
           id: message.id,
           role: message.role === 'assistant' ? 'assistant' : 'user',
           content: message.content,
-          sources: message.sources,
+          sources: message.sources ?? [],
         })),
       );
     } finally {

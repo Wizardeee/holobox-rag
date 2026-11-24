@@ -2,6 +2,8 @@ import type {
   ApiError,
   ApiResult,
   CapabilitiesResponse,
+  Conversation,
+  ConversationSummary,
   DeletedResponse,
   DocumentInfo,
   FilePart,
@@ -51,25 +53,13 @@ export const api = {
     request<number[]>('/api/v1/synthesize', { method: 'POST', body }),
 
   listConversations: () => request<ConversationSummary[]>('/api/v1/conversations'),
-  getConversation: (id: string) => request<ConversationRecord>(`/api/v1/conversations/${encodeURIComponent(id)}`),
+  getConversation: (id: string) => request<Conversation>(`/api/v1/conversations/${encodeURIComponent(id)}`),
   createConversation: (body: { owner_id: string; title?: string }) =>
-    request<ConversationRecord>('/api/v1/conversations', { method: 'POST', body }),
+    request<Conversation>('/api/v1/conversations', { method: 'POST', body }),
   deleteConversation: (id: string) =>
     request<DeletedResponse>(`/api/v1/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };
 
-export interface ConversationSummary {
-  id: string;
-  title: string;
-  created_at: string;
-  updated_at: string;
-  message_count: number;
-}
-
-export interface ConversationRecord extends ConversationSummary {
-  owner_id: string;
-  messages: { id: string; role: string; content: string; sources: SourceReference[]; created_at: string }[];
-}
 
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);

@@ -12,7 +12,7 @@
 | 7 — Text chat | COMPLETE | typed question → answer + citations | 58 passed; real integration test |
 | 8 — Whisper STT | COMPLETE | audio → editable transcription | 62 passed |
 | 9 — Piper TTS | COMPLETE | answer → cached audio, playback | 67 passed; real Piper verified |
-| 10 — Voice workflow | PENDING | full pipeline + text fallback | — |
+| 10 — Voice workflow | COMPLETE | full pipeline + text fallback | 72 passed |
 | 11 — Testing/packaging | PENDING | suite green, docs complete, Windows prep | — |
 
 ## Stage 0 notes
@@ -103,6 +103,15 @@
 - Known limitations: one configured voice by default; no audio-device selection; Piper binary is macOS-only here, Windows assets must be provisioned separately.
 - Next: Stage 10 — verify the complete voice workflow and text fallback.
 
+## Stage 10 report (2026-11-24)
+
+- Implemented: acceptance tests for the complete sequence (audio → transcription → same RAG query API → answer with citations → WAV audio) and for text-only operation when both voice services fail. Added the missing conversation-history API (create/list/open/delete with ownership enforcement) so the History screen is fully functional, and replaced frontend local conversation types with generated OpenAPI types.
+- Files: `backend/tests/test_voice_workflow.py`, `backend/app/api/conversations.py`, `backend/tests/test_conversations_api.py`, router wiring, regenerated `shared/api-contracts/openapi.json` and frontend types, `frontend/src/services/api.ts`, `useChat.ts`, `HistoryPage.tsx`.
+- Dependencies: none added.
+- Tests: `.venv/bin/python -m pytest tests -q` → **72 passed**. Frontend `npm run build`, `npm run electron:build`, `npm run check:api-types` all pass.
+- Known limitations: no automated GUI test; microphone hardware permissions are OS-controlled; streaming is implemented in the HTTP provider but not exposed via a WebSocket endpoint.
+- Next: Stage 11 — final verification, documentation, packaging preparation.
+
 ## Latest stage report
 
-_Stage 9 complete; 67 tests passing._
+_Stage 10 complete; 72 tests passing._

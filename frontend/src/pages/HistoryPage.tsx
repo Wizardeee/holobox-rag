@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { useChat } from '../hooks/useChat';
-import { api, errorMessage, type ConversationSummary } from '../services/api';
+import { api, errorMessage } from '../services/api';
+import type { ConversationSummary } from '../types/api';
 
 export function HistoryPage({ chat }: { chat: ReturnType<typeof useChat> }) {
   const [items, setItems] = useState<ConversationSummary[]>([]);

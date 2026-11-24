@@ -14,6 +14,7 @@ from app.core.config import get_settings
 from app.core.errors import install_error_handlers
 from app.core.logging import setup_logging
 from app.api.config import router as config_router
+from app.api.conversations import router as conversations_router
 from app.api.query import router as query_router
 from app.api.synthesis import router as synthesis_router
 from app.api.voice import router as voice_router
@@ -97,6 +98,7 @@ def create_app() -> FastAPI:
     app.include_router(voice_router)
     app.include_router(synthesis_router)
     app.include_router(config_router)
+    app.include_router(conversations_router)
     app.include_router(api_router)
 
     @app.get("/health", include_in_schema=False)
