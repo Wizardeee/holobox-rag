@@ -2,63 +2,68 @@
 
 ## System shape
 
-Two independent components talking over a versioned HTTP/WebSocket API.
-
 ```
-Electron renderer (React/TS)  --preload bridge-->  Electron main
-        |  HTTP /api/v1 (and WS for streaming)
-        v
-FastAPI backend  --> ingestion --> embeddings --> ChromaDB
-        |              \--> retrieval --> RAG --> LLM provider
-        |--> SQLite (documents, conversations, messages)
-        |--> faster-whisper (STT)   |--> Piper (TTS) + audio cache
-```
-
-The backend has **no Electron dependency**. Any HTTP client — including a future Three.js avatar client — can call the same transcription, query and synthesis endpoints without backend changes. All endpoints are in `shared/communication-protocol/PROTOCOL.md`.
-
-## Approved decisions (Stage 0)
-
-1. **Mock LLM honesty.** The mock provider labels every answer as a development/test response, sets `generation_mode: "mock"`, and is refused at startup when `HOLOBOX_ENVIRONMENT=production`. It is never presented as a genuine AI answer.
-2. **Ownership and access control.** Every document has `owner_id` and `scope` (`shared` or `user`). Retrieval filters to `(scope == shared) OR (scope == user AND owner_id == requester)`. The requester comes from the `X-User-Id` header (default `local-user`), so a future authenticated multi-user system only replaces that one dependency — no schema or RAG restructure.
-3. **Contract source of truth.** FastAPI/Pydantic models in `backend/app/models/schemas.py` are authoritative. `openapi-typescript` generates `frontend/src/types/api.generated.ts` from the live backend's OpenAPI schema. `frontend/scripts/generate-api-types.mjs` performs generation and a staleness check that fails CI if generated types are outdated.
-4. **Backend independence.** No avatar/Electron imports, no renderer secrets. STT, query and synthesis are separate, documented APIs consumable by a future avatar client.
-5. **Local-first and M1/8GB-friendly.** All state in `backend/data/`. Small embeddings (`all-MiniLM-L6-v2`), cached `faster-whisper-base`, existing Piper voice, no local LLM by default. Embeddings are a singleton; STT/TTS load lazily and run off the event loop.
-6. **No scope creep.** No Unity, no avatar rendering, no unnecessary dependencies.
-
-## Boundaries
-
-| Layer | Owns | Does not own |
-|---|---|---|
-| `api/` | HTTP validation, auth, error mapping | Business logic |
-| `services/` | Use-case orchestration | HTTP details |
-| `ingestion/`, `embeddings/`, `vector_db/`, `retrieval/`, `rag/`, `llm/`, `speech_to_text/`, `text_to_speech/` | One capability behind an interface | Each other's storage |
-| `conversations/repository.py` | SQLite persistence | Vector storage |
-| Electron `main` | Window, permissions, settings file, backend spawn config | RAG or AI logic |
-| Electron `preload` | Narrow `contextBridge` API | Business logic |
-
-## Contract generation
-
-```bash
-cd frontend
-npm run generate:api-types   # regenerate from backend /openapi.json
-npm run check:api-types      # fail if generated file is stale
+ Browser (Teacher Portal, teacher.html) ─┐
+                                          ├─ /api/v1 (HTTP + bearer tokens) ─► FastAPI backend
+ Electron (Student Kiosk, index.html) ────┘                                     │
+   ├─ preload bridge (no Node in renderer)                                    ├─ auth: teacher / kiosk roles
+   ├─ Three.js avatar (state + amplitude)                                     ├─ courses → subjects → documents (SQLite)
+   └─ single audio owner (Web Audio analyser)                                 ├─ ingestion → embedding → ChromaDB
+                                                                               ├─ course-filtered RAG → Ollama
+                                                                               └─ whisper STT / piper TTS + audio cache
 ```
 
-`shared/api-contracts/openapi.json` holds the committed schema snapshot. All request/response shapes live only in `schemas.py`; generated TS types are never hand-edited.
+The backend has no Electron or avatar dependency. Both clients use the same API
+and the same knowledge base. The kiosk cannot reach document-management endpoints
+at all — the backend rejects those operations for the kiosk role.
 
-## Storage layout (`backend/data/`, gitignored)
+## Decisions that must stay true
+
+1. **Mock honesty** — labelled dev-only; refused in production. Never a silent fallback.
+2. **Identity from token only** — `X-User-Id` is not authentication (dev mode with
+   `HOLOBOX_AUTH_ENABLED=false` exists only for tests). Production requires auth,
+   a hashed teacher password and rotated secrets.
+3. **Course scoping in the backend** — kiosk queries are filtered by selected
+   course/subject and `approved=1` before any vector search; client-side selection
+   is only a request parameter, never an access-control decision.
+4. **Contract source of truth** — Pydantic in `backend/app/models/schemas.py`;
+   OpenAPI snapshot in `shared/api-contracts/openapi.json`; generated TS types in
+   `frontend/src/types/api.generated.ts` (`npm run check:api-types` fails if stale).
+5. **Local-first resource strategy** — MiniLM embeddings, `llama3.2:latest` (3.2B,
+   ~2.6 GB loaded), Whisper `base`, Piper subprocess. No cloud inference.
+6. **Avatar separation** — `AvatarController` knows nothing about RAG or audio
+   requests; the kiosk hook owns the single audio element and passes an analyser.
+   The model has no morphs or jaw bone, so speaking is amplitude-driven head motion,
+   not phoneme lip sync (see `docs/AVATAR_INSPECTION.md`).
+
+## Layout
 
 ```
-uploads/{document_id}/{safe_filename}   original uploaded file
-chroma/                                ChromaDB persistent collection
-holobox.db                             documents, conversations, messages (sqlite3)
-audio_cache/{sha256}.wav                cached TTS audio (hash of text+voice)
-tmp/                                    transient recordings, deleted after use
+backend/app/
+  api/            auth, courses, documents, query, voice, synthesis, conversations, config, health
+  core/           config, auth (PBKDF2 + signed tokens), errors, security, logging
+  ingestion/      extractors, chunking, ingestor (ingest/reindex)
+  embeddings/     Sentence Transformers provider behind interface
+  vector_db/      ChromaDB provider behind interface (course/subject/approved metadata)
+  retrieval/      scope-filtered retriever
+  rag/            grounded prompt + pipeline
+  llm/            provider interface: mock / HTTP (Ollama) / college stub
+  speech_to_text/ faster-whisper
+  text_to_speech/ Piper + content-hash cache
+  services/       repository (SQLite), indexer, dependencies
+frontend/
+  src/kiosk/      student-only fullscreen experience
+  src/avatar/     AvatarController (Three.js state/motion)
+  src/components/Avatar.tsx  renderer only
+  src/hooks/      useKioskConversation (voice pipeline + audio ownership), useSettings
+  src/services/   api.ts (typed), transport.ts (bridge or browser fetch)
+  src/teacher/    browser admin portal page
+  electron/       main/preload with narrow bridge and kiosk credential
+  public/avatar/  bundled GLB (source asset untouched)
 ```
 
-## Resource strategy
+## Storage
 
-- Embedding model loaded once at first use; CPU inference, ~90 MB.
-- Whisper model loaded on first transcription, `base` by default; configurable.
-- Piper runs as a subprocess with the local voice model; loaded per synthesis request, cached output by content hash.
-- Answer generation is provider-configured. This machine uses local Ollama `llama3.2:latest` (3.2B, ~2.6 GB loaded) through the generic HTTP provider; keep only one Ollama model loaded at a time. No provider configured means honest `unavailable`, never mock fallback.
+`backend/data/` (gitignored): `uploads/`, `chroma/`, `holobox.db`, `audio_cache/`, `tmp/`.
+
+Schema: `documents` (now with `course_id`, `subject_id`, `approved`, `uploader`, `updated_at`), `document_chunks`, `conversations`, `messages`, `courses`, `subjects`. Existing databases are migrated forward on startup with `ALTER TABLE` and backfilled to `general`/approved.

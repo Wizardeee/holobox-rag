@@ -44,6 +44,9 @@ class Indexer:
                     scope=document.scope.value,
                     text=chunk["text"],
                     chunk_index=chunk["chunk_index"],
+                    course_id=document.course_id,
+                    subject_id=document.subject_id,
+                    approved=document.approved,
                 )
                 for chunk in chunks
             ],

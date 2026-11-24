@@ -13,8 +13,10 @@ from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.errors import install_error_handlers
 from app.core.logging import setup_logging
+from app.api.auth import router as auth_router
 from app.api.config import router as config_router
 from app.api.conversations import router as conversations_router
+from app.api.courses import router as courses_router
 from app.api.query import router as query_router
 from app.api.synthesis import router as synthesis_router
 from app.api.voice import router as voice_router
@@ -63,7 +65,7 @@ async def lifespan(app: FastAPI):
     settings.ensure_directories()
     setup_logging(settings.environment)
     repository = Repository(settings.database_path)
-    repository.init()
+    repository.init(settings.seed_courses_list)
     embedder = create_embedder(settings)
     vector_store = create_vector_store(settings)
     app.state.repository = repository
@@ -95,7 +97,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     install_error_handlers(app)
+    app.include_router(auth_router)
     app.include_router(health_router)
+    app.include_router(courses_router)
     app.include_router(documents_router)
     app.include_router(query_router)
     app.include_router(voice_router)

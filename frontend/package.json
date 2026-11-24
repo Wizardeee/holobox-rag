@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
+    "dev:teacher": "vite --port 5174",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
     "electron:build": "tsc -p tsconfig.electron.json",
     "electron": "electron dist-electron/main.js",
@@ -12,8 +13,10 @@
     "check:api-types": "node scripts/generate-api-types.mjs --check"
   },
   "dependencies": {
+    "@types/three": "^0.171.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "three": "^0.171.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
@@ -29,8 +32,15 @@
   "build": {
     "appId": "com.holobox.rag",
     "productName": "Holobox RAG",
-    "files": ["dist/**", "dist-electron/**"],
-    "mac": { "target": "dmg" },
-    "win": { "target": "nsis" }
+    "files": [
+      "dist/**",
+      "dist-electron/**"
+    ],
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    }
   }
 }

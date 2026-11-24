@@ -1,45 +1,48 @@
-# API
+# API v1
 
-Base path `/api/v1`; JSON except `/transcribe` (multipart) and `/synthesize` (WAV response). Full machine-readable schema: `shared/api-contracts/openapi.json`. Protocol notes: `shared/communication-protocol/PROTOCOL.md`.
+Base path `/api/v1`; JSON except `/transcribe` (multipart) and `/synthesize` (WAV). Schema: `shared/api-contracts/openapi.json`. Protocol notes: `shared/communication-protocol/PROTOCOL.md`.
 
-Auth is off by default for local use. Set `HOLOBOX_API_TOKEN` to require `Authorization: Bearer <token>` on all `/api/v1` routes except health. Every request uses `X-User-Id` (default `local-user`) for ownership; clients cannot set ownership through a request body.
+## Authentication
 
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/health` | Version + capability summary (also `/api/v1/health`) |
-| POST | `/documents` | Upload `file` + `scope` (`user`/`shared`); returns `DocumentInfo` |
-| GET | `/documents` | Visible documents (own + shared) |
-| GET | `/documents/{id}` | Metadata |
-| DELETE | `/documents/{id}` | Deletes file, DB row and all vectors (owner only) |
-| POST | `/query` | `QueryRequest` → `QueryResponse` with sources + `generation_mode` |
-| POST | `/transcribe` | multipart `audio` + optional `language` → text, language, duration |
-| POST | `/synthesize` | `{text, voice?}` → `audio/wav` (cached by content hash) |
-| GET | `/config/capabilities` | Providers, embedding model, STT models, Piper voices |
-| GET/POST | `/conversations` | List / create conversations |
-| GET/DELETE | `/conversations/{id}` | Open / delete conversation |
+- `POST /auth/login` with `{username, password}` → signed bearer token (teacher role).
+- `GET /auth/me` → current identity and permitted courses.
+- Kiosk uses a provisioned static token from `HOLOBOX_KIOSK_TOKEN` as `Authorization: Bearer …`.
+- Role and identity are derived from the token. `X-User-Id` is ignored when auth is enabled; it is accepted only in explicit test/dev mode (`HOLOBOX_AUTH_ENABLED=false`), which production config rejects.
+- `HOLOBOX_API_TOKEN` is an optional legacy shared-secret header for the whole API.
 
-Example query:
+## Endpoints
 
-```bash
-curl -s -X POST http://127.0.0.1:8000/api/v1/query \
-  -H 'Content-Type: application/json' -H 'X-User-Id: local-user' \
-  -d '{"question":"When does the library open?","owner_id":"local-user","include_sources":true}'
-```
+| Method | Path | Role | Purpose |
+|---|---|---|---|
+| GET | `/health` | public | Version/capabilities |
+| POST | `/auth/login` | public | Teacher login |
+| GET | `/auth/me` | teacher/kiosk | Identity |
+| GET | `/courses` | teacher/kiosk | Courses (kiosk sees only permitted) |
+| POST | `/courses` | teacher | Create course |
+| GET | `/courses/{id}/subjects` | teacher/kiosk | Subjects |
+| POST | `/courses/{id}/subjects` | teacher | Create subject |
+| POST | `/documents` | teacher | Upload with `course_id`, `subject_id?`, `approved` |
+| GET | `/documents?course_id=&subject_id=` | teacher/kiosk | Documents (kiosk: approved only) |
+| GET | `/documents/{id}` | teacher/kiosk | Metadata (kiosk: approved/permitted only) |
+| PATCH | `/documents/{id}` | teacher | Approve/hide, move subject |
+| POST | `/documents/{id}/reindex` | teacher | Rebuild embeddings/vectors |
+| POST | `/documents/{id}/replace` | teacher | Replace file, preserve association |
+| DELETE | `/documents/{id}` | teacher | Delete file, row and vectors |
+| POST | `/query` | teacher/kiosk | Course-filtered RAG answer + citations |
+| POST | `/transcribe` | teacher/kiosk | multipart audio → text |
+| POST | `/synthesize` | teacher/kiosk | `{text, voice?}` → WAV |
+| GET | `/config/capabilities` | teacher/kiosk | Providers, models, voices |
+| GET/POST | `/conversations` | teacher/kiosk | Local history |
+| GET/DELETE | `/conversations/{id}` | teacher/kiosk | Open/delete |
 
-`generation_mode` is `mock`, `live` or `unavailable`. `mock` answers are explicitly labelled as test output and are forbidden in production. `live` means a real configured provider generated the answer — currently the local Ollama model `llama3.2:latest` through the generic OpenAI-compatible HTTP provider at `http://127.0.0.1:11434/v1`. If Ollama is stopped or out of memory, the response is `unavailable` with a `provider_error` warning and still includes retrieved `sources`; it never silently falls back to mock. When retrieval finds nothing, the response has `retrieved_context_available: false`, `warning: "no_relevant_context"` and a fixed honest answer.
+Kiosk queries **must** include `course_id`; a different or unpermitted course returns 403. Retrieval is filtered in the backend to approved documents of that course/subject before vector search. `generation_mode` is `live`, `mock` (labelled dev only) or `unavailable` (never silent mock fallback). No-context answers return `retrieved_context_available: false` and `warning: no_relevant_context`.
 
-Provider selection lives in `backend/.env` (`HOLOBOX_LLM_PROVIDER`, `HOLOBOX_LLM_BASE_URL`, `HOLOBOX_LLM_MODEL`, `HOLOBOX_LLM_TIMEOUT_SECONDS`). The college provider and mock remain available but are never used implicitly.
+Errors: `{"detail":{"code":"...","message":"..."}}`. TTS codes: `tts_binary_missing`, `tts_voice_missing`, `tts_timeout`, `tts_generation_failed`, etc. Full stderr stays in backend logs.
 
-Errors: `{"detail":{"code":"...","message":"..."}}` with 400/403/404/413/415/422/500/503 as appropriate. TTS failures use specific codes: `tts_binary_not_configured`, `tts_binary_missing`, `tts_binary_not_executable`, `tts_voice_not_configured`, `tts_voice_missing`, `tts_launch_failed`, `tts_timeout`, `tts_generation_failed`, `tts_empty_output`, `tts_invalid_wav`. The underlying stderr/exception is logged server-side only.
-
-## Contract generation
-
-Pydantic models in `backend/app/models/schemas.py` are the only source of truth. After changing them:
+After changing Pydantic models, regenerate the contract:
 
 ```bash
 cd backend && .venv/bin/python -c \
   "import json; from app.main import app; json.dump(app.openapi(), open('../shared/api-contracts/openapi.json','w'), indent=2)"
 cd ../frontend && npm run generate:api-types && npm run check:api-types
 ```
-
-Never hand-edit `frontend/src/types/api.generated.ts`.

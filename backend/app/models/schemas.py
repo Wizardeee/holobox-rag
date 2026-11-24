@@ -28,6 +28,54 @@ class Scope(str, Enum):
     USER = "user"
 
 
+class Role(str, Enum):
+    TEACHER = "teacher"
+    KIOSK = "kiosk"
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=128)
+    password: str = Field(min_length=1, max_length=256)
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    role: Role
+    display_name: str
+
+
+class PrincipalInfo(BaseModel):
+    user_id: str
+    role: Role
+    display_name: str
+    permitted_courses: list[str] | None
+
+
+class CourseInfo(BaseModel):
+    id: str
+    name: str
+    active: bool = True
+    created_at: datetime
+
+
+class SubjectInfo(BaseModel):
+    id: str
+    course_id: str
+    name: str
+    active: bool = True
+
+
+class CourseCreate(BaseModel):
+    id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9_-]+$")
+    name: str = Field(min_length=1, max_length=200)
+
+
+class SubjectCreate(BaseModel):
+    id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9_-]+$")
+    name: str = Field(min_length=1, max_length=200)
+
+
 class DocumentInfo(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -42,6 +90,16 @@ class DocumentInfo(BaseModel):
     chunk_count: int = 0
     error: str | None = None
     created_at: datetime
+    course_id: str = "general"
+    subject_id: str | None = None
+    approved: bool = True
+    uploader: str = ""
+    updated_at: datetime | None = None
+
+
+class DocumentUpdate(BaseModel):
+    approved: bool | None = None
+    subject_id: str | None = None
 
 
 class SourceReference(BaseModel):
@@ -58,6 +116,9 @@ class QueryRequest(BaseModel):
     conversation_id: str | None = None
     top_k: int | None = Field(default=None, ge=1, le=20)
     include_sources: bool = True
+    # Course/subject are selected on the kiosk but authorised by the backend.
+    course_id: str | None = Field(default=None, max_length=64)
+    subject_id: str | None = Field(default=None, max_length=64)
 
 
 class QueryResponse(BaseModel):

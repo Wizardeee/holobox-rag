@@ -36,18 +36,20 @@ def test_duplicate_upload_is_not_ingested_twice(client):
     assert len(client.get("/api/v1/documents", headers={"X-User-Id": "alice"}).json()) == 1
 
 
-def test_ownership_is_enforced(client):
+def test_teacher_documents_carry_course_metadata_and_are_manageable(client):
     own = _upload(client, user="alice").json()
     shared = _upload(client, filename="shared.txt", scope=Scope.SHARED, user="alice").json()
 
-    bob = {"X-User-Id": "bob"}
-    visible = {item["id"] for item in client.get("/api/v1/documents", headers=bob).json()}
-    assert shared["id"] in visible
-    assert own["id"] not in visible
+    visible = {item["id"] for item in client.get("/api/v1/documents").json()}
+    assert own["id"] in visible and shared["id"] in visible
+    assert own["course_id"] == "general"
+    assert own["approved"] is True
 
-    assert client.get(f"/api/v1/documents/{own['id']}", headers=bob).status_code == 403
-    assert client.delete(f"/api/v1/documents/{own['id']}", headers=bob).status_code == 403
-    assert client.get(f"/api/v1/documents/{shared['id']}", headers=bob).status_code == 200
+    # Document management is a teacher-only capability; kiosk denial is
+    # covered with real tokens in test_rbac.py.
+    assert client.get(f"/api/v1/documents/{own['id']}").status_code == 200
+    assert client.delete(f"/api/v1/documents/{own['id']}").status_code == 200
+    assert client.get(f"/api/v1/documents/{shared['id']}").status_code == 200
 
 
 def test_unsupported_type_and_empty_file(client):

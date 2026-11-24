@@ -29,11 +29,14 @@ def test_conversation_ownership_is_enforced(client):
     assert client.get("/api/v1/conversations", headers=bob).json() == []
     assert client.get(f"/api/v1/conversations/{created['id']}", headers=bob).status_code == 403
     assert client.delete(f"/api/v1/conversations/{created['id']}", headers=bob).status_code == 403
-    assert client.post(
+    # owner_id in the request body is ignored; identity comes from auth/header.
+    created_for_alice = client.post(
         "/api/v1/conversations",
         json={"owner_id": "bob"},
         headers={"X-User-Id": "alice"},
-    ).status_code == 403
+    )
+    assert created_for_alice.status_code == 201
+    assert client.get(f"/api/v1/conversations/{created_for_alice.json()['id']}", headers=bob).status_code == 403
 
 
 def test_query_appends_messages_to_conversation(client):

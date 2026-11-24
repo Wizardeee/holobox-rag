@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, Response
 from fastapi.concurrency import run_in_threadpool
 
 from app.core.errors import AppError
-from app.core.security import current_user, verify_token
+from app.core.auth import require_authenticated
+from app.core.security import verify_token
 from app.models.schemas import SynthesisRequest
 from app.services.dependencies import get_tts_service
 from app.text_to_speech.base import TTSService, TTSUnavailableError
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/api/v1", dependencies=[Depends(verify_token)])
 @router.post("/synthesize")
 async def synthesize(
     request: SynthesisRequest,
-    _owner: str = Depends(current_user),
+    _principal=Depends(require_authenticated),
     service: TTSService = Depends(get_tts_service),
 ) -> Response:
     try:

@@ -22,10 +22,25 @@ class Retriever:
         self.vector_store = vector_store
         self.settings = settings
 
-    def retrieve(self, question: str, owner_id: str, top_k: int | None = None) -> list[SearchHit]:
+    def retrieve(
+        self,
+        question: str,
+        owner_id: str,
+        top_k: int | None = None,
+        *,
+        course_id: str | None = None,
+        subject_id: str | None = None,
+        approved_only: bool = False,
+    ) -> list[SearchHit]:
         visible = {
             document.id
-            for document in self.repository.list_documents(owner_id)
+            for document in self.repository.list_documents(
+                None,  # visibility is enforced by course/approval filters below
+
+                course_id=course_id,
+                subject_id=subject_id,
+                approved_only=approved_only,
+            )
             if document.status == DocumentStatus.READY
         }
         if not visible:

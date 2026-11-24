@@ -41,19 +41,21 @@ def test_query_end_to_end_with_citations(client):
     assert "excerpt" in body["sources"][0]
 
 
-def test_query_validation_and_owner_mismatch(client):
+def test_query_validation_and_course_validation(client):
     assert client.post("/api/v1/query", json={"question": ""}).status_code == 422
-    mismatched = client.post(
+    unknown_course = client.post(
         "/api/v1/query",
-        json={"question": "hi", "owner_id": "bob"},
+        json={"question": "hi", "course_id": "does-not-exist"},
         headers={"X-User-Id": "alice"},
     )
-    assert mismatched.status_code == 403
+    assert unknown_course.status_code == 404
 
 
 def test_query_requires_token_when_configured(tmp_path, monkeypatch):
     monkeypatch.setenv("HOLOBOX_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("HOLOBOX_AUTH_ENABLED", "true")
     monkeypatch.setenv("HOLOBOX_API_TOKEN", "secret-token")
+    monkeypatch.setenv("HOLOBOX_KIOSK_TOKEN", "secret-token")
     get_settings.cache_clear()
     with TestClient(create_app()) as client:
         assert client.post("/api/v1/query", json={"question": "hi"}).status_code == 401

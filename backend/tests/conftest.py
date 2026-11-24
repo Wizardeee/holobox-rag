@@ -12,6 +12,9 @@ from tests.fakes import FakeEmbedder, FakeLLMProvider, FakeSTTProvider, FakeTTSS
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("HOLOBOX_DATA_DIR", str(tmp_path / "data"))
     monkeypatch.setenv("HOLOBOX_LLM_PROVIDER", "mock")
+    # Legacy unit tests exercise the pre-auth API surface; auth-specific tests
+    # enable it explicitly. Production always refuses auth_enabled=false.
+    monkeypatch.setenv("HOLOBOX_AUTH_ENABLED", "false")
     monkeypatch.delenv("HOLOBOX_API_TOKEN", raising=False)
     monkeypatch.setattr(main_module, "create_embedder", lambda settings: FakeEmbedder())
     monkeypatch.setattr(main_module, "create_vector_store", lambda settings: FakeVectorStore())

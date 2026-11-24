@@ -14,6 +14,14 @@ export type MessageInfo = components['schemas']['MessageInfo'];
 export type CapabilitiesResponse = components['schemas']['CapabilitiesResponse'];
 export type HealthResponse = components['schemas']['HealthResponse'];
 export type DeletedResponse = components['schemas']['DeletedResponse'];
+export type CourseInfo = components['schemas']['CourseInfo'];
+export type SubjectInfo = components['schemas']['SubjectInfo'];
+export type LoginRequest = components['schemas']['LoginRequest'];
+export type LoginResponse = components['schemas']['LoginResponse'];
+export type PrincipalInfo = components['schemas']['PrincipalInfo'];
+export type DocumentUpdate = components['schemas']['DocumentUpdate'];
+export type CourseCreate = components['schemas']['CourseCreate'];
+export type SubjectCreate = components['schemas']['SubjectCreate'];
 
 export interface ApiResult<T> {
   ok: boolean;
@@ -47,4 +55,6 @@ export interface AppSettings {
   sttModel: string;
   ttsVoice: string;
   language: string;
+  kioskToken: string;
+  courseId: string;
 }

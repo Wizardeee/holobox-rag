@@ -35,8 +35,17 @@ class RAGPipeline:
         self.repository = repository
         self.settings = settings
 
-    def run(self, request: QueryRequest) -> QueryResponse:
-        hits = self.retriever.retrieve(request.question, request.owner_id, request.top_k)
+    def run(self, request: QueryRequest, *, principal=None, course_id: str | None = None) -> QueryResponse:
+        owner = principal.user_id if principal is not None else request.owner_id
+        approved_only = bool(principal is not None and principal.role == "kiosk")
+        hits = self.retriever.retrieve(
+            request.question,
+            owner,
+            request.top_k,
+            course_id=course_id or request.course_id,
+            subject_id=request.subject_id,
+            approved_only=approved_only,
+        )
         sources = [
             SourceReference(
                 document_id=hit.document_id,
@@ -49,7 +58,7 @@ class RAGPipeline:
         ] if request.include_sources else []
 
         if not hits:
-            self._persist(request, NO_CONTEXT_ANSWER, [])
+            self._persist(request, NO_CONTEXT_ANSWER, [], owner=owner)
             return QueryResponse(
                 answer=NO_CONTEXT_ANSWER,
                 sources=sources,
@@ -72,7 +81,12 @@ class RAGPipeline:
                 warning="generation_failed",
             )
 
-        self._persist(request, response.text, [source.model_dump(mode="json") for source in sources])
+        self._persist(
+            request,
+            response.text,
+            [source.model_dump(mode="json") for source in sources],
+            owner=owner,
+        )
         return QueryResponse(
             answer=response.text,
             sources=sources,
@@ -82,15 +96,15 @@ class RAGPipeline:
             warning=response.warning,
         )
 
-    def _persist(self, request: QueryRequest, answer: str, sources: list[dict]) -> None:
+    def _persist(self, request: QueryRequest, answer: str, sources: list[dict], *, owner: str) -> None:
         if not request.conversation_id:
             return
         conversation = self.repository.get_conversation(request.conversation_id)
         if conversation is None:
             self.repository.create_conversation(
-                request.conversation_id, request.owner_id, request.question[:80]
+                request.conversation_id, owner, request.question[:80]
             )
-        elif conversation["owner_id"] != request.owner_id:
+        elif conversation["owner_id"] != owner:
             logger.warning("Refusing to write to conversation owned by another user")
             return
         self.repository.add_message(request.conversation_id, uuid4().hex, "user", request.question, [])

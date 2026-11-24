@@ -33,6 +33,18 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     api_token: str | None = None
 
+    # --- Role-based access (teacher portal + student kiosk) ----------------
+    auth_enabled: bool = True
+    auth_secret: str = "dev-only-secret-replace-in-env"
+    token_ttl_seconds: int = Field(default=8 * 3600, ge=60)
+    teacher_username: str = "teacher"
+    teacher_display_name: str = "Teacher"
+    teacher_password_hash: str = ""
+    kiosk_token: str = "dev-only-kiosk-token-replace-in-env"
+    # Empty = kiosk may use every active course; otherwise comma-separated ids.
+    kiosk_courses: str = ""
+    seed_courses: str = "gpu-architecture:GPU Architecture & Programming;general:General Studies"
+
     max_upload_mb: int = Field(default=50, ge=1, le=500)
     allowed_extensions: str = ".pdf,.docx,.txt,.md"
     chunk_size: int = Field(default=800, ge=100, le=4000)
@@ -58,6 +70,21 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [item.strip() for item in self.cors_origins.split(",") if item.strip()]
+
+    @property
+    def kiosk_courses_set(self) -> set[str] | None:
+        values = {item.strip() for item in self.kiosk_courses.split(",") if item.strip()}
+        return values or None
+
+    @property
+    def seed_courses_list(self) -> list[tuple[str, str]]:
+        courses: list[tuple[str, str]] = []
+        for item in self.seed_courses.split(";"):
+            if not item.strip() or ":" not in item:
+                continue
+            course_id, name = item.split(":", 1)
+            courses.append((course_id.strip(), name.strip()))
+        return courses
 
     @property
     def allowed_extensions_set(self) -> set[str]:
@@ -128,6 +155,17 @@ class Settings(BaseSettings):
                 if candidate.is_file():
                     self.piper_voice = str(candidate)
                     break
+        return self
+
+    @model_validator(mode="after")
+    def require_production_auth(self) -> "Settings":
+        if self.environment.lower() in {"prod", "production"}:
+            if not self.auth_enabled:
+                raise ValueError("Authentication must be enabled in production")
+            if not self.teacher_password_hash:
+                raise ValueError("HOLOBOX_TEACHER_PASSWORD_HASH is required in production")
+            if "dev-only" in self.auth_secret or "dev-only" in self.kiosk_token:
+                raise ValueError("Replace dev-only auth secret and kiosk token in production")
         return self
 
     @model_validator(mode="after")

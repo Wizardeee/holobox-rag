@@ -10,7 +10,8 @@ from fastapi.concurrency import run_in_threadpool
 
 from app.core.config import Settings
 from app.core.errors import AppError
-from app.core.security import current_user, verify_token
+from app.core.auth import require_authenticated
+from app.core.security import verify_token
 from app.models.schemas import TranscriptionResponse
 from app.services.dependencies import get_stt_provider, settings_dependency
 from app.speech_to_text.base import STTProvider
@@ -24,7 +25,7 @@ MAX_AUDIO_MB = 25
 async def transcribe_audio(
     audio: UploadFile = File(...),
     language: str | None = Form(None),
-    _owner: str = Depends(current_user),
+    _principal=Depends(require_authenticated),
     settings: Settings = Depends(settings_dependency),
     provider: STTProvider = Depends(get_stt_provider),
 ) -> TranscriptionResponse:

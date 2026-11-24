@@ -11,10 +11,12 @@ interface AppSettings {
   sttModel: string;
   ttsVoice: string;
   language: string;
+  kioskToken: string;
+  courseId: string;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
-  backendUrl: 'http://127.0.0.1:8000',
+  backendUrl: process.env.HOLOBOX_BACKEND_URL || 'http://127.0.0.1:8000',
   apiToken: '',
   userId: 'local-user',
   voiceInputEnabled: true,
@@ -22,6 +24,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   sttModel: 'base',
   ttsVoice: '',
   language: '',
+  kioskToken: process.env.HOLOBOX_KIOSK_TOKEN || '',
+  courseId: process.env.HOLOBOX_KIOSK_COURSE || '',
 };
 
 interface FilePart {
@@ -68,8 +72,10 @@ ipcMain.handle('api:request', async (_event, request: ApiRequest) => {
   const suffix = query.toString();
   const url = `${settings.backendUrl.replace(/\/$/, '')}${request.path}${suffix ? `?${suffix}` : ''}`;
 
-  const headers: Record<string, string> = { 'X-User-Id': settings.userId };
-  if (settings.apiToken) headers.Authorization = `Bearer ${settings.apiToken}`;
+  // Identity comes only from the provisioned kiosk credential.
+  const headers: Record<string, string> = {};
+  const credential = settings.kioskToken || settings.apiToken;
+  if (credential) headers.Authorization = `Bearer ${credential}`;
 
   let body: BodyInit | undefined;
   if (request.form) {
@@ -115,7 +121,9 @@ function createWindow(): void {
     height: 840,
     minWidth: 920,
     minHeight: 620,
-    title: 'Holobox RAG',
+    title: 'Holobox Student Kiosk',
+    fullscreen: process.env.HOLOBOX_KIOSK_FULLSCREEN !== 'false',
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

@@ -29,11 +29,22 @@ class Ingestor:
         if len(content) > max_bytes:
             raise ValueError(f"File exceeds the {self.settings.max_upload_mb} MB limit")
 
-    def ingest(self, filename: str, content: bytes, scope: Scope, owner_id: str) -> DocumentInfo:
+    def ingest(
+        self,
+        filename: str,
+        content: bytes,
+        scope: Scope,
+        owner_id: str,
+        *,
+        course_id: str = "general",
+        subject_id: str | None = None,
+        approved: bool = True,
+        uploader: str = "",
+    ) -> DocumentInfo:
         self.validate(filename, content)
         digest = hashlib.sha256(content).hexdigest()
 
-        duplicate = self.repository.find_by_hash(digest, owner_id, scope)
+        duplicate = self.repository.find_by_hash(digest, owner_id, scope, course_id)
         if duplicate is not None and duplicate.status == DocumentStatus.READY:
             return duplicate
 
@@ -52,6 +63,10 @@ class Ingestor:
             size_bytes=len(content),
             sha256=digest,
             created_at=utcnow(),
+            course_id=course_id,
+            subject_id=subject_id,
+            approved=approved,
+            uploader=uploader or owner_id,
         )
         self.repository.create_document(document)
 
@@ -79,6 +94,15 @@ class Ingestor:
             )
 
         return self.repository.get_document(document_id)  # type: ignore[return-value]
+
+    def reindex(self, document_id: str) -> int:
+        """Rebuild embeddings/vectors for an already-ingested document."""
+        document = self.repository.get_document(document_id)
+        if document is None:
+            raise ValueError("Document not found")
+        if self.indexer is None:
+            return 0
+        return self.indexer.index_document(document_id)
 
     def delete_files(self, document_id: str) -> None:
         import shutil

@@ -1,37 +1,39 @@
 # Communication Protocol (v1)
 
-Base path: `/api/v1`. JSON unless noted. A future Three.js avatar client uses exactly these endpoints.
+Both clients call the same FastAPI backend at `/api/v1`. See `docs/api.md` and
+`shared/api-contracts/openapi.json` for exact shapes.
 
-## Authentication & identity
+## Identity and authorization
 
-- Local-first: no auth by default. When `HOLOBOX_API_TOKEN` is set on the backend, every `/api/v1` request except health requires `Authorization: Bearer <token>`.
-- `X-User-Id` identifies the requester (default `local-user`). It is an identity hint stored locally by the client, not a credential. Ownership is always taken from this header — never from a request body.
-- Ownership: user documents/conversations are visible only to their owner; `scope=shared` documents are visible to all. Deletion requires ownership.
+- Teacher: `POST /auth/login` → signed bearer token (role `teacher`).
+- Kiosk: provisioned static bearer token from `HOLOBOX_KIOSK_TOKEN` (role `kiosk`).
+- Identity/role/course permissions are derived **only** from the bearer token.
+  `X-User-Id` is never trusted as authentication (dev-test mode excepted, and
+  production refuses to start with auth disabled).
+- Document management endpoints exist only for `teacher`; the kiosk receives 403.
+- Kiosk queries require `course_id`; retrieval is limited to that course and
+  `approved=1` documents by the backend before any vector search.
 
-## Endpoints
+## Flow
 
-| Method | Path | Body / input | Response |
-|---|---|---|---|
-| GET | `/api/v1/health` | — | `HealthResponse` (unauthenticated) |
-| POST | `/api/v1/documents` | multipart `file`, form `scope` | `DocumentInfo` (`processing`→`ready`/`failed`) |
-| GET | `/api/v1/documents` | — | `DocumentInfo[]` (own + shared) |
-| GET | `/api/v1/documents/{id}` | — | `DocumentInfo` |
-| DELETE | `/api/v1/documents/{id}` | — | `DeletedResponse` + vector/file cleanup |
-| POST | `/api/v1/query` | `QueryRequest` | `QueryResponse` (answer, sources, `generation_mode`) |
-| POST | `/api/v1/transcribe` | multipart `audio`, form `language?` | `TranscriptionResponse` |
-| POST | `/api/v1/synthesize` | `SynthesisRequest` | `audio/wav` (content-hash cached) |
-| GET | `/api/v1/config/capabilities` | — | `CapabilitiesResponse` |
-| GET/POST | `/api/v1/conversations` | `ConversationCreate` for POST | `ConversationSummary[]` / `Conversation` |
-| GET/DELETE | `/api/v1/conversations/{id}` | — | `Conversation` / `DeletedResponse` |
+1. Teacher logs in, selects course/subject, uploads PDF/DOCX/TXT/MD.
+2. Backend extracts text, chunks, embeds with MiniLM, writes SQLite + ChromaDB
+   metadata (`course_id`, `subject_id`, `approved`, `document_id`).
+3. Kiosk streams microphone audio to `/transcribe`; Whisper returns text.
+4. Kiosk posts `{question, course_id}` to `/query`; backend filters documents,
+   retrieves chunks, builds a grounded prompt, calls Ollama, returns answer +
+   citations. No context → fixed honest answer with `no_relevant_context`.
+5. Kiosk posts answer text to `/synthesize`; Piper returns WAV. The kiosk plays
+   that single audio element and drives avatar motion from a Web Audio analyser.
 
-## Contract rules
+## Streaming
 
-- All shapes are defined once in `backend/app/models/schemas.py` (Pydantic). TS types are generated from OpenAPI into `frontend/src/types/api.generated.ts`; never edit them by hand. `shared/api-contracts/openapi.json` is the committed snapshot.
-- Errors use `{"detail": {"code": "...", "message": "..."}}`. Codes include `validation_error`, `unauthorized`, `forbidden`, `not_found`, `unsupported_type`, `file_too_large`, `invalid_file`, `unsupported_audio_type`, `empty_audio`, `audio_too_large`, `transcription_failed`, `tts_unavailable`, `no_relevant_context`, `mock_provider`, `provider_unavailable`.
-- `generation_mode` is `mock | live | unavailable`. Mock answers are explicitly labelled and forbidden in production. With no provider, `unavailable` still returns retrieved `sources`.
-- When retrieval finds nothing: `retrieved_context_available: false`, `warning: "no_relevant_context"`, fixed honest answer.
-- Streaming: the generic HTTP provider implements SSE token streaming internally. A WebSocket query endpoint (`WS /api/v1/ws/query`) is the planned non-breaking addition for avatar clients; clients must work without it.
+The HTTP LLM provider implements SSE internally. A `WS /api/v1/ws/query` token
+stream is a non-breaking future addition for avatar clients; the current kiosk
+works without it.
 
-## Desktop client settings
+## Contract generation
 
-The renderer stores only backend URL, optional API token, user id, voice/model preferences and feature toggles — in Electron `userData`, never in renderer source. All HTTP calls are made by the Electron main process over a narrow preload bridge, so the renderer never touches backend internals or secrets.
+Pydantic models in `backend/app/models/schemas.py` are the only source of truth.
+Never edit `frontend/src/types/api.generated.ts` by hand; run
+`npm run generate:api-types` after schema changes.

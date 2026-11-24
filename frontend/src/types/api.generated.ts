@@ -1,5 +1,39 @@
 // GENERATED FILE — do not edit. Run: npm run generate:api-types
 export interface paths {
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Login */
+        post: operations["login_api_v1_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Me */
+        get: operations["me_api_v1_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -11,6 +45,42 @@ export interface paths {
         get: operations["health_api_v1_health_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Courses */
+        get: operations["list_courses_api_v1_courses_get"];
+        put?: never;
+        /** Create Course */
+        post: operations["create_course_api_v1_courses_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courses/{course_id}/subjects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Subjects */
+        get: operations["list_subjects_api_v1_courses__course_id__subjects_get"];
+        put?: never;
+        /** Create Subject */
+        post: operations["create_subject_api_v1_courses__course_id__subjects_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -48,6 +118,41 @@ export interface paths {
         post?: never;
         /** Delete Document */
         delete: operations["delete_document_api_v1_documents__document_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Document */
+        patch: operations["update_document_api_v1_documents__document_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}/reindex": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reindex Document */
+        post: operations["reindex_document_api_v1_documents__document_id__reindex_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replace Document */
+        post: operations["replace_document_api_v1_documents__document_id__replace_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -161,6 +266,14 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Body_replace_document_api_v1_documents__document_id__replace_post */
+        Body_replace_document_api_v1_documents__document_id__replace_post: {
+            /**
+             * File
+             * Format: binary
+             */
+            file: string;
+        };
         /** Body_transcribe_audio_api_v1_transcribe_post */
         Body_transcribe_audio_api_v1_transcribe_post: {
             /**
@@ -180,6 +293,18 @@ export interface components {
             file: string;
             /** @default user */
             scope: components["schemas"]["Scope"];
+            /**
+             * Course Id
+             * @default general
+             */
+            course_id: string;
+            /** Subject Id */
+            subject_id?: string | null;
+            /**
+             * Approved
+             * @default true
+             */
+            approved: boolean;
         };
         /** CapabilitiesResponse */
         CapabilitiesResponse: {
@@ -250,6 +375,30 @@ export interface components {
             /** Message Count */
             message_count: number;
         };
+        /** CourseCreate */
+        CourseCreate: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** CourseInfo */
+        CourseInfo: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** DeletedResponse */
         DeletedResponse: {
             /** Deleted */
@@ -283,12 +432,38 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Course Id
+             * @default general
+             */
+            course_id: string;
+            /** Subject Id */
+            subject_id?: string | null;
+            /**
+             * Approved
+             * @default true
+             */
+            approved: boolean;
+            /**
+             * Uploader
+             * @default
+             */
+            uploader: string;
+            /** Updated At */
+            updated_at?: string | null;
         };
         /**
          * DocumentStatus
          * @enum {string}
          */
         DocumentStatus: "processing" | "ready" | "failed";
+        /** DocumentUpdate */
+        DocumentUpdate: {
+            /** Approved */
+            approved?: boolean | null;
+            /** Subject Id */
+            subject_id?: string | null;
+        };
         /**
          * GenerationMode
          * @enum {string}
@@ -308,6 +483,26 @@ export interface components {
             /** Capabilities */
             capabilities: Record<string, never>;
         };
+        /** LoginRequest */
+        LoginRequest: {
+            /** Username */
+            username: string;
+            /** Password */
+            password: string;
+        };
+        /** LoginResponse */
+        LoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /**
+             * Token Type
+             * @default bearer
+             */
+            token_type: string;
+            role: components["schemas"]["Role"];
+            /** Display Name */
+            display_name: string;
+        };
         /** MessageInfo */
         MessageInfo: {
             /** Id */
@@ -323,6 +518,16 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** PrincipalInfo */
+        PrincipalInfo: {
+            /** User Id */
+            user_id: string;
+            role: components["schemas"]["Role"];
+            /** Display Name */
+            display_name: string;
+            /** Permitted Courses */
+            permitted_courses: string[] | null;
         };
         /** QueryRequest */
         QueryRequest: {
@@ -342,6 +547,10 @@ export interface components {
              * @default true
              */
             include_sources: boolean;
+            /** Course Id */
+            course_id?: string | null;
+            /** Subject Id */
+            subject_id?: string | null;
         };
         /** QueryResponse */
         QueryResponse: {
@@ -357,6 +566,11 @@ export interface components {
             /** Warning */
             warning?: string | null;
         };
+        /**
+         * Role
+         * @enum {string}
+         */
+        Role: "teacher" | "kiosk";
         /**
          * Scope
          * @enum {string}
@@ -374,6 +588,27 @@ export interface components {
             excerpt: string;
             /** Score */
             score: number;
+        };
+        /** SubjectCreate */
+        SubjectCreate: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** SubjectInfo */
+        SubjectInfo: {
+            /** Id */
+            id: string;
+            /** Course Id */
+            course_id: string;
+            /** Name */
+            name: string;
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
         };
         /** SynthesisRequest */
         SynthesisRequest: {
@@ -409,6 +644,71 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    login_api_v1_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    me_api_v1_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-User-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrincipalInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     health_api_v1_health_get: {
         parameters: {
             query?: never;
@@ -429,12 +729,155 @@ export interface operations {
             };
         };
     };
-    list_documents_api_v1_documents_get: {
+    list_courses_api_v1_courses_get: {
         parameters: {
             query?: never;
             header?: {
                 authorization?: string | null;
-                "X-User-Id"?: string;
+                "X-User-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseInfo"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_course_api_v1_courses_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-User-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CourseCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_subjects_api_v1_courses__course_id__subjects_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-User-Id"?: string | null;
+            };
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubjectInfo"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_subject_api_v1_courses__course_id__subjects_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-User-Id"?: string | null;
+            };
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubjectCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubjectInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_documents_api_v1_documents_get: {
+        parameters: {
+            query?: {
+                course_id?: string | null;
+                subject_id?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+                "X-User-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -466,7 +909,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string | null;
-                "X-User-Id"?: string;
+                "X-User-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -502,7 +945,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string | null;
-                "X-User-Id"?: string;
+                "X-User-Id"?: string | null;
             };
             path: {
                 document_id: string;
@@ -536,7 +979,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string | null;
-                "X-User-Id"?: string;
+                "X-User-Id"?: string | null;
             };
             path: {
                 document_id: string;
@@ -565,12 +1008,122 @@ export interface operations {
             };
         };
     };
+    update_document_api_v1_documents__document_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-User-Id"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reindex_document_api_v1_documents__document_id__reindex_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-User-Id"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_document_api_v1_documents__document_id__replace_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-User-Id"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_replace_document_api_v1_documents__document_id__replace_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     query_api_v1_query_post: {
         parameters: {
             query?: never;
             header?: {
                 authorization?: string | null;
-                "X-User-Id"?: string;
+                "X-User-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -606,7 +1159,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string | null;
-                "X-User-Id"?: string;
+                "X-User-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -642,7 +1195,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string | null;
-                "X-User-Id"?: string;
+                "X-User-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -709,7 +1262,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string | null;
-                "X-User-Id"?: string;
+                "X-User-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -741,7 +1294,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string | null;
-                "X-User-Id"?: string;
+                "X-User-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -777,7 +1330,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string | null;
-                "X-User-Id"?: string;
+                "X-User-Id"?: string | null;
             };
             path: {
                 conversation_id: string;
@@ -811,7 +1364,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string | null;
-                "X-User-Id"?: string;
+                "X-User-Id"?: string | null;
             };
             path: {
                 conversation_id: string;

@@ -14,6 +14,7 @@ from app.llm.mock import LABEL
 def test_typed_question_end_to_end_with_real_components(tmp_path, monkeypatch):
     monkeypatch.setenv("HOLOBOX_DATA_DIR", str(tmp_path / "data"))
     monkeypatch.setenv("HOLOBOX_LLM_PROVIDER", "mock")
+    monkeypatch.setenv("HOLOBOX_AUTH_ENABLED", "false")
     monkeypatch.delenv("HOLOBOX_API_TOKEN", raising=False)
     get_settings.cache_clear()
     app = main_module.create_app()

@@ -38,6 +38,9 @@ class ChromaVectorStore:
                     "owner_id": chunk.owner_id,
                     "scope": chunk.scope,
                     "chunk_index": chunk.chunk_index,
+                    "course_id": chunk.course_id,
+                    "subject_id": chunk.subject_id or "",
+                    "approved": 1 if chunk.approved else 0,
                 }
                 for chunk in chunks
             ],

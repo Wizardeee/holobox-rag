@@ -157,6 +157,18 @@ All 12 stages (0–11) complete. Backend runs; documents upload/index/delete; re
 - Electron via DevTools Protocol → renderer fetched 97,440 WAV bytes through the preload bridge, `<audio>` reported `playing`.
 - Backend `pytest tests -q` → **83 passed** (8 new regression tests covering env-file loading, stale-env fallback, missing/non-executable paths, subprocess failure, timeout, invalid WAV and API error-code propagation). Frontend `npm run build`, `npm run electron:build`, `npm run check:api-types` pass.
 
+## College integration (Stages A–G, 2026-11-24)
+
+- **A Inspection:** repository and `sabrina_3d_avatar.glb` inspected; report in `docs/AVATAR_INSPECTION.md`. Asset is a Skinned GLB with 83 joints, one Idle clip, zero morph targets and no jaw bone.
+- **B Backend:** teacher/kiosk auth (PBKDF2 + signed tokens), courses/subjects, document metadata (course/subject/approved/uploader), reindex/replace/approve, course-filtered retrieval. Migrated SQLite forward without data loss.
+- **C Teacher portal:** new `teacher.html` Vite entry, login, course/subject management, upload/status/approve/reindex/replace/delete. Browser login and document listing verified via Chrome CDP.
+- **D Student kiosk:** fullscreen Electron kiosk only; teacher screens removed from bundle; course selector; idle/listening/processing/speaking/error states; single audio owner.
+- **E Avatar:** Three.js renderer + `AvatarController`; GLB loaded in Electron; amplitude-driven speaking fallback (no mouth controls in asset).
+- **F LAN:** `docs/deployment.md` with MacBook/Windows split, explicit origins, kiosk env vars, no public exposure.
+- **G Tests/builds:** backend **88 passed**; frontend build, Electron build, API-type check pass; live API + Electron CDP + Chrome CDP integration verified. Windows/cross-device and physical microphone NOT RUN.
+
+Full evidence and limitations: `docs/IMPLEMENTATION_REPORT.md`.
+
 ## Latest stage report
 
-_All stages complete; 83 tests passing; recurring Piper 503 root cause fixed and verified with stale environment variables._
+_Two-interface architecture complete; 88 tests passing; Windows/physical hardware tests remain explicitly not run._

@@ -10,7 +10,7 @@ class StubRetriever:
     def __init__(self, hits):
         self.hits = hits
 
-    def retrieve(self, question, owner_id, top_k=None):
+    def retrieve(self, question, owner_id, top_k=None, **_kwargs):
         return self.hits
 
 

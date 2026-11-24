@@ -16,6 +16,9 @@ class VectorChunk:
     scope: str
     text: str
     chunk_index: int
+    course_id: str = "general"
+    subject_id: str | None = None
+    approved: bool = True
 
 
 @dataclass(frozen=True)

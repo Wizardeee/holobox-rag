@@ -1,8 +1,23 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { resolve } from 'node:path';
+
+const backendUrl = process.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
 
 export default defineConfig({
   plugins: [react()],
-  server: { port: 5173 },
+  server: {
+    port: 5173,
+    host: process.env.VITE_HOST || '127.0.0.1',
+    proxy: { '/api': { target: backendUrl, changeOrigin: true } },
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        kiosk: resolve(__dirname, 'index.html'),
+        teacher: resolve(__dirname, 'teacher.html'),
+      },
+    },
+  },
   base: './',
 });
