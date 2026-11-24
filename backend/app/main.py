@@ -77,6 +77,9 @@ async def lifespan(app: FastAPI):
     app.state.pipeline = RAGPipeline(retriever, provider, repository, settings)
     app.state.stt_provider = create_stt_provider(settings)
     app.state.tts_service = create_tts_service(settings)
+    describe = getattr(app.state.tts_service, "describe", None)
+    if describe is not None:
+        logger.info("TTS diagnostics at startup: %s", describe())
     logger.info("Holobox RAG backend %s ready (data dir: %s)", __version__, settings.data_dir)
     yield
 

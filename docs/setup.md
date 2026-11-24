@@ -8,7 +8,7 @@ The backend reads **`backend/.env`** automatically. Its path is anchored to the 
 
 - `backend/.env.example` — documented placeholders (committed).
 - `backend/.env` — this machine's real values (gitignored, never commit). It currently selects the local Ollama model and the local Piper binary/voice.
-- Shell environment variables still override `.env` for one-off tests.
+- Shell environment variables override `.env` (pydantic-settings precedence). If you previously exported a wrong `HOLOBOX_PIPER_*` value in a Terminal, `unset HOLOBOX_PIPER_BINARY HOLOBOX_PIPER_VOICE` or restart that shell. The backend now logs a warning and falls back to the real installation when a configured path is unusable, so a stale variable can no longer cause a 503. Check the `TTS diagnostics at startup` log line to see exactly which binary/voice the running process resolved.
 
 If setting up a different machine, copy the example and edit it:
 

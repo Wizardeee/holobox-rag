@@ -142,6 +142,21 @@ All 12 stages (0–11) complete. Backend runs; documents upload/index/delete; re
 - Electron via DevTools Protocol: renderer fetched 97,440 WAV bytes through the preload bridge and the `<audio>` element reported `playing`.
 - Ollama loaded size measured at 2.6 GB with `ollama ps`; Chroma telemetry POSTs stopped after restart (0 occurrences in new log).
 
+## Runtime bug fix (2026-11-24) — recurring Piper 503
+
+**Reported symptom:** `/api/v1/synthesize` still returned `Piper is not configured (set HOLOBOX_PIPER_BINARY and HOLOBOX_PIPER_VOICE)` even though `backend/.env` held correct paths.
+
+**Root cause reproduced:** shell environment variables take precedence over `.env` in pydantic-settings. A stale `HOLOBOX_PIPER_BINARY=/Users/deekshaa/Desktop/piper/piper` (the nonexistent path quoted in the report) overrides the correct `.env` value; `PiperTTSService.available` then saw a nonexistent binary and emitted exactly that misleading error. Reproduced deterministically with a clean process: correct `.env` → available; stale env var → the reported 503 text. No backend process was found running at investigation time, so no stale process/code was involved.
+
+**Fix:** `Settings.resolve_piper_paths()` now validates configured paths (existence + executable bit), logs and discards unusable values, then falls back to the known local installation. `PiperTTSService` exposes `describe()` for a startup diagnostics log line, validates binary before voice, and raises typed error codes (`tts_binary_not_configured`, `tts_binary_missing`, `tts_binary_not_executable`, `tts_voice_not_configured`, `tts_voice_missing`, `tts_launch_failed`, `tts_timeout`, `tts_generation_failed`, `tts_empty_output`, `tts_invalid_wav`). Full Piper stderr/exceptions go to backend logs only; the client receives a concise, accurate message and code. Voice names without a suffix resolve to `<voice_dir>/<name>.onnx`.
+
+**Verification actually performed:**
+- Direct Piper run with real binary/voice and test sentence → exit 0, valid 1-ch 22,050 Hz 2.67 s WAV.
+- Backend started with the **stale wrong shell variables still set** → startup warnings + fallback to real paths, `/synthesize` HTTP 200, valid 2.72 s WAV.
+- Real RAG query using the uploaded `GPU_Project_Report.pdf` and Ollama `llama3.2:latest` → `generation_mode=live`, 5 citations, answer "12 airports, 32 directed routes, Tesla T4", no mock label; answer synthesised to a valid 7.44 s WAV.
+- Electron via DevTools Protocol → renderer fetched 97,440 WAV bytes through the preload bridge, `<audio>` reported `playing`.
+- Backend `pytest tests -q` → **83 passed** (8 new regression tests covering env-file loading, stale-env fallback, missing/non-executable paths, subprocess failure, timeout, invalid WAV and API error-code propagation). Frontend `npm run build`, `npm run electron:build`, `npm run check:api-types` pass.
+
 ## Latest stage report
 
-_All stages complete plus Piper/Ollama fixes; 75 tests passing; real Ollama and Piper verified end to end._
+_All stages complete; 83 tests passing; recurring Piper 503 root cause fixed and verified with stale environment variables._

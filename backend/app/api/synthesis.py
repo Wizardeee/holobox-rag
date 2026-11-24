@@ -21,5 +21,5 @@ async def synthesize(
     try:
         audio = await run_in_threadpool(service.synthesize, request.text, request.voice)
     except TTSUnavailableError as exc:
-        raise AppError("tts_unavailable", str(exc), 503)
+        raise AppError(exc.code, str(exc), 503)
     return Response(content=audio, media_type="audio/wav", headers={"Cache-Control": "private, max-age=3600"})

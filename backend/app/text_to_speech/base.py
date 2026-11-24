@@ -6,7 +6,11 @@ from typing import Protocol, runtime_checkable
 
 
 class TTSUnavailableError(Exception):
-    """Raised when no TTS engine is configured or the engine fails."""
+    """TTS could not produce audio. `code` is safe to return to the client."""
+
+    def __init__(self, message: str, code: str = "tts_unavailable") -> None:
+        super().__init__(message)
+        self.code = code
 
 
 @runtime_checkable

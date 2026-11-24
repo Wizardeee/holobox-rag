@@ -30,7 +30,7 @@ curl -s -X POST http://127.0.0.1:8000/api/v1/query \
 
 Provider selection lives in `backend/.env` (`HOLOBOX_LLM_PROVIDER`, `HOLOBOX_LLM_BASE_URL`, `HOLOBOX_LLM_MODEL`, `HOLOBOX_LLM_TIMEOUT_SECONDS`). The college provider and mock remain available but are never used implicitly.
 
-Errors: `{"detail":{"code":"...","message":"..."}}` with 400/403/404/413/415/422/500/503 as appropriate.
+Errors: `{"detail":{"code":"...","message":"..."}}` with 400/403/404/413/415/422/500/503 as appropriate. TTS failures use specific codes: `tts_binary_not_configured`, `tts_binary_missing`, `tts_binary_not_executable`, `tts_voice_not_configured`, `tts_voice_missing`, `tts_launch_failed`, `tts_timeout`, `tts_generation_failed`, `tts_empty_output`, `tts_invalid_wav`. The underlying stderr/exception is logged server-side only.
 
 ## Contract generation
 

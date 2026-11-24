@@ -1,12 +1,15 @@
 """Central configuration. All values are overridable with HOLOBOX_* env vars."""
 
 from functools import lru_cache
+import logging
 import os
 from pathlib import Path
 import shutil
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 # Anchor to the backend folder so `uvicorn app.main:app` loads .env regardless
@@ -81,11 +84,27 @@ class Settings(BaseSettings):
         return self.data_dir / "holobox.db"
 
     @model_validator(mode="after")
-    def discover_piper(self) -> "Settings":
-        """Fall back to common local Piper locations when no env value is set.
+    def resolve_piper_paths(self) -> "Settings":
+        """Validate configured Piper paths, then fall back to known local locations.
 
-        Explicit HOLOBOX_PIPER_* values (including those in .env) always win.
+        A stale HOLOBOX_PIPER_* shell variable overrides `.env` in
+        pydantic-settings. If it points to a missing/non-executable file we must
+        not treat it as a valid configuration — discard it and discover the real
+        installation instead, logging what happened.
         """
+        if self.piper_binary:
+            binary = Path(self.piper_binary).expanduser()
+            if not binary.is_file() or not os.access(binary, os.X_OK):
+                logger.warning(
+                    "Configured Piper binary is unusable, ignoring it: %s", self.piper_binary
+                )
+                self.piper_binary = None
+        if self.piper_voice:
+            voice = Path(self.piper_voice).expanduser()
+            if not voice.is_file():
+                logger.warning("Configured Piper voice is missing, ignoring it: %s", self.piper_voice)
+                self.piper_voice = None
+
         home = Path.home()
         if not self.piper_binary:
             candidates = [
