@@ -5,7 +5,7 @@ Base path: `/api/v1`. JSON unless noted. A future avatar client uses exactly the
 ## Authentication & identity
 
 - Local-first: no auth by default. When `HOLOBOX_API_TOKEN` is set on the backend, every request must send `Authorization: Bearer <token>`.
-- `X-User-Id` identifies the requester (default `local-user`). It is an identity hint, not a secret. The frontend stores it locally and sends it on every request.
+- `X-User-Id` identifies the requester (default `local-user`). It is an identity hint, not a secret. The frontend stores it locally and sends it on every request. Ownership is always taken from this header — never from a request body — so a client cannot claim another user's documents.
 - Ownership: user documents are visible only to their owner; `scope=shared` documents are visible to all.
 
 ## Endpoints
@@ -13,7 +13,7 @@ Base path: `/api/v1`. JSON unless noted. A future avatar client uses exactly the
 | Method | Path | Body / input | Response |
 |---|---|---|---|
 | GET | `/api/v1/health` | — | `{status, version, capabilities}` |
-| POST | `/api/v1/documents` | multipart `file`, form `scope`, `owner_id` | `DocumentInfo` (status `processing`→`ready`) |
+| POST | `/api/v1/documents` | multipart `file`, form `scope` | `DocumentInfo` (status `processing`→`ready`) |
 | GET | `/api/v1/documents` | query `owner_id` | `DocumentInfo[]` (scope-filtered) |
 | GET | `/api/v1/documents/{id}` | — | `DocumentInfo` |
 | DELETE | `/api/v1/documents/{id}` | query `owner_id` | `{deleted: true}` + vector cleanup |

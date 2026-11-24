@@ -7,20 +7,27 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
+from app.api.documents import router as documents_router
 from app.api.health import router as health_router
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.errors import install_error_handlers
 from app.core.logging import setup_logging
+from app.ingestion.ingestor import Ingestor
+from app.services.repository import Repository
 
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
+async def lifespan(app: FastAPI):
     settings = get_settings()
     settings.ensure_directories()
     setup_logging(settings.environment)
+    repository = Repository(settings.database_path)
+    repository.init()
+    app.state.repository = repository
+    app.state.ingestor = Ingestor(settings, repository)
     logger.info("Holobox RAG backend %s ready (data dir: %s)", __version__, settings.data_dir)
     yield
 
@@ -37,6 +44,7 @@ def create_app() -> FastAPI:
     )
     install_error_handlers(app)
     app.include_router(health_router)
+    app.include_router(documents_router)
     app.include_router(api_router)
 
     @app.get("/health", include_in_schema=False)

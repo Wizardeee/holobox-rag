@@ -4,7 +4,7 @@
 |---|---|---|---|
 | 0 — Assessment & architecture | COMPLETE | Assessment, structure, roadmap, contract, risks | Approved 2026-11-24; spec committed; decisions in docs/architecture.md |
 | 1 — FastAPI foundation | COMPLETE | health + config + errors + tests pass | 12 passed |
-| 2 — Document ingestion | PENDING | extract/chunk/dedupe/delete tests pass | — |
+| 2 — Document ingestion | COMPLETE | extract/chunk/dedupe/delete tests pass | 28 passed |
 | 3 — Embeddings + ChromaDB | PENDING | insert/search/filter/delete tests pass | — |
 | 4 — Retrieval + RAG | PENDING | retrieval + citation + no-context tests pass | — |
 | 5 — LLM providers | PENDING | provider switching + unavailable tests pass | — |
@@ -31,6 +31,15 @@
 - Known limitations: `/api/v1/query`, documents, voice and conversation routes do not exist yet; contract-level tests for them arrive with their stages. One harmless `python-multipart` PendingDeprecationWarning from installed Starlette.
 - Next: Stage 2 — document ingestion.
 
+## Stage 2 report (2026-11-24)
+
+- Implemented: PDF/DOCX/TXT/Markdown extraction with page numbers, word-boundary chunking with overlap, SQLite repository (documents/chunks/conversations/messages), SHA-256 dedupe, ownership-scoped document APIs, deletion with file cleanup, optional bearer token on document routes.
+- Files: `backend/app/ingestion/{extractors,chunking,ingestor}.py`, `backend/app/services/{repository,dependencies}.py`, `backend/app/api/documents.py`, `backend/tests/{helpers,test_extractors,test_chunking,test_documents_api,test_repository}.py`.
+- Dependencies: none added (pypdf, docx2txt already pinned in Stage 1).
+- Tests: `.venv/bin/python -m pytest tests -q` → **28 passed**. Fixed during the stage: missing `/api/v1` route prefix, malformed test PDF header, `created_at` omission in `DocumentInfo`, word-splitting overlap.
+- Known limitations: embeddings/vector index not wired yet (Stage 3); no re-index endpoint; extraction of scanned PDFs (images) yields empty text.
+- Next: Stage 3 — embeddings and ChromaDB.
+
 ## Latest stage report
 
-_Stage 1 complete; 12 tests passing._
+_Stage 2 complete; 28 tests passing._
