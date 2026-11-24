@@ -15,6 +15,7 @@ from app.core.errors import install_error_handlers
 from app.core.logging import setup_logging
 from app.api.config import router as config_router
 from app.api.query import router as query_router
+from app.api.voice import router as voice_router
 from app.embeddings.base import EmbeddingProvider
 from app.embeddings.factory import get_embedder
 from app.ingestion.ingestor import Ingestor
@@ -24,6 +25,8 @@ from app.rag.pipeline import RAGPipeline
 from app.retrieval.retriever import Retriever
 from app.services.indexer import Indexer
 from app.services.repository import Repository
+from app.speech_to_text.base import STTProvider
+from app.speech_to_text.factory import get_stt_provider
 from app.vector_db.base import VectorStore
 from app.vector_db.factory import get_chroma_store
 
@@ -40,6 +43,10 @@ def create_vector_store(settings) -> VectorStore:
 
 def create_llm_provider(settings) -> LLMProvider:
     return get_llm_provider(settings)
+
+
+def create_stt_provider(settings) -> STTProvider:
+    return get_stt_provider(settings.stt_model, settings.stt_device)
 
 
 @asynccontextmanager
@@ -60,6 +67,7 @@ async def lifespan(app: FastAPI):
     app.state.retriever = retriever
     app.state.llm_provider = provider
     app.state.pipeline = RAGPipeline(retriever, provider, repository, settings)
+    app.state.stt_provider = create_stt_provider(settings)
     logger.info("Holobox RAG backend %s ready (data dir: %s)", __version__, settings.data_dir)
     yield
 
@@ -78,6 +86,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(documents_router)
     app.include_router(query_router)
+    app.include_router(voice_router)
     app.include_router(config_router)
     app.include_router(api_router)
 

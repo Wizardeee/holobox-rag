@@ -70,6 +70,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/transcribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transcribe Audio */
+        post: operations["transcribe_audio_api_v1_transcribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/config/capabilities": {
         parameters: {
             query?: never;
@@ -91,6 +108,16 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Body_transcribe_audio_api_v1_transcribe_post */
+        Body_transcribe_audio_api_v1_transcribe_post: {
+            /**
+             * Audio
+             * Format: binary
+             */
+            audio: string;
+            /** Language */
+            language?: string | null;
+        };
         /** Body_upload_document_api_v1_documents_post */
         Body_upload_document_api_v1_documents_post: {
             /**
@@ -228,6 +255,15 @@ export interface components {
             excerpt: string;
             /** Score */
             score: number;
+        };
+        /** TranscriptionResponse */
+        TranscriptionResponse: {
+            /** Text */
+            text: string;
+            /** Language */
+            language?: string | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -426,6 +462,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transcribe_audio_api_v1_transcribe_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-User-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_transcribe_audio_api_v1_transcribe_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionResponse"];
                 };
             };
             /** @description Validation Error */

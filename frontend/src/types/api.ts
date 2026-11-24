@@ -6,6 +6,7 @@ export type Scope = components['schemas']['Scope'];
 export type SourceReference = components['schemas']['SourceReference'];
 export type QueryRequest = components['schemas']['QueryRequest'];
 export type QueryResponse = components['schemas']['QueryResponse'];
+export type TranscriptionResponse = components['schemas']['TranscriptionResponse'];
 export type CapabilitiesResponse = components['schemas']['CapabilitiesResponse'];
 export type HealthResponse = components['schemas']['HealthResponse'];
 export type DeletedResponse = components['schemas']['DeletedResponse'];

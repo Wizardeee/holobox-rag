@@ -13,7 +13,7 @@ interface Props {
 
 export function ChatPage({ settings, chat }: Props) {
   const [draft, setDraft] = useState('');
-  const voice = useVoice((text) => setDraft(text));
+  const voice = useVoice((text) => setDraft(text), settings.language || undefined);
 
   const submit = async () => {
     const question = draft.trim();

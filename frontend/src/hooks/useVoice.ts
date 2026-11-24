@@ -6,7 +6,7 @@ function bytesToWavUrl(bytes: number[]): string {
   return URL.createObjectURL(blob);
 }
 
-export function useVoice(onTranscript: (text: string) => void) {
+export function useVoice(onTranscript: (text: string) => void, language?: string) {
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [speaking, setSpeaking] = useState(false);
@@ -34,7 +34,7 @@ export function useVoice(onTranscript: (text: string) => void) {
             fileName: 'recording.webm',
             type: blob.type,
             data: Array.from(buffer),
-          });
+          }, language);
           onTranscript(result.text);
         } catch (reason) {
           setError(reason instanceof Error ? reason.message : String(reason));
@@ -48,7 +48,7 @@ export function useVoice(onTranscript: (text: string) => void) {
     } catch (reason) {
       setError(`Microphone unavailable: ${reason instanceof Error ? reason.message : String(reason)}`);
     }
-  }, [onTranscript]);
+  }, [language, onTranscript]);
 
   const stopRecording = useCallback(() => {
     recorder.current?.stop();

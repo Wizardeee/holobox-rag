@@ -2,9 +2,23 @@
 
 import hashlib
 
+from pathlib import Path
+
 from app.llm.base import LLMResponse
+from app.speech_to_text.base import TranscriptionResult
 from app.models.schemas import GenerationMode
 from app.vector_db.base import SearchHit
+
+
+class FakeSTTProvider:
+    model_name = "fake-whisper"
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[Path, str | None]] = []
+
+    def transcribe(self, audio_path: Path, language: str | None = None) -> TranscriptionResult:
+        self.calls.append((audio_path, language))
+        return TranscriptionResult(text="transcribed test audio", language=language or "en", duration_seconds=1.0)
 
 
 class FakeLLMProvider:

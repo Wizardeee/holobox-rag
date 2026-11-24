@@ -10,6 +10,7 @@ import type {
   QueryResponse,
   Scope,
   SourceReference,
+  TranscriptionResponse,
 } from '../types/api';
 
 async function request<T>(path: string, options: Record<string, unknown> = {}): Promise<T> {
@@ -40,7 +41,7 @@ export const api = {
   query: (body: QueryRequest) => request<QueryResponse>('/api/v1/query', { method: 'POST', body }),
 
   transcribe: (audio: FilePart, language?: string) =>
-    request<TranscriptionResult>('/api/v1/transcribe', {
+    request<TranscriptionResponse>('/api/v1/transcribe', {
       method: 'POST',
       form: { audio, language: language || undefined },
     }),
@@ -55,12 +56,6 @@ export const api = {
   deleteConversation: (id: string) =>
     request<DeletedResponse>(`/api/v1/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };
-
-export interface TranscriptionResult {
-  text: string;
-  language?: string | null;
-  duration_seconds?: number | null;
-}
 
 export interface ConversationSummary {
   id: string;

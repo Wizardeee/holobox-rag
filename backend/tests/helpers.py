@@ -1,6 +1,9 @@
 """Minimal but genuine PDF/DOCX builders for extraction tests."""
 
 from io import BytesIO
+import math
+import struct
+import wave
 from zipfile import ZipFile, ZIP_DEFLATED
 
 
@@ -38,6 +41,21 @@ def make_pdf(pages: list[str]) -> bytes:
         f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_position}\n%%EOF\n".encode()
     )
     return out.getvalue()
+
+
+def make_wav(seconds: int = 1) -> bytes:
+    buffer = BytesIO()
+    with wave.open(buffer, "wb") as output:
+        output.setnchannels(1)
+        output.setsampwidth(2)
+        output.setframerate(16000)
+        output.writeframes(
+            b"".join(
+                struct.pack("<h", int(3000 * math.sin(2 * math.pi * 440 * i / 16000)))
+                for i in range(16000 * seconds)
+            )
+        )
+    return buffer.getvalue()
 
 
 def make_docx(paragraphs: list[str]) -> bytes:

@@ -10,7 +10,7 @@
 | 5 — LLM providers | COMPLETE | provider switching + unavailable tests pass | 57 passed |
 | 6 — Electron frontend | COMPLETE | app launches, reaches backend | smoke verified |
 | 7 — Text chat | COMPLETE | typed question → answer + citations | 58 passed; real integration test |
-| 8 — Whisper STT | PENDING | audio → editable transcription | — |
+| 8 — Whisper STT | COMPLETE | audio → editable transcription | 62 passed |
 | 9 — Piper TTS | PENDING | answer → cached audio, playback | — |
 | 10 — Voice workflow | PENDING | full pipeline + text fallback | — |
 | 11 — Testing/packaging | PENDING | suite green, docs complete, Windows prep | — |
@@ -85,6 +85,15 @@
 - Known limitations: GUI interaction was not automated; no E2E browser test harness. Voice stages remain.
 - Next: Stage 8 — Whisper speech-to-text.
 
+## Stage 8 report (2026-11-24)
+
+- Implemented: `STTProvider` interface, lazy faster-whisper provider (cached `base` model, int8 CPU), POST `/api/v1/transcribe` with format/size validation, explicit language form field, threadpool execution, guaranteed temp-file cleanup and normalized errors. Added configurable `HOLOBOX_STT_*` settings. Frontend microphone hook now sends the configured language and places the editable transcription into the chat composer before submission.
+- Files: `backend/app/speech_to_text/{base,whisper,factory}.py`, `backend/app/api/voice.py`, service/dependency/router wiring, `backend/tests/{test_transcribe_api,test_whisper}.py`, `tests/fakes.py`, frontend `useVoice.ts`/`ChatPage.tsx`/generated types.
+- Dependencies: none added (faster-whisper and PyAV already installed; cached base model verified working on this M1).
+- Tests: `.venv/bin/python -m pytest tests -q` → **62 passed**, including a real faster-whisper transcription. Frontend `npm run build` and `npm run check:api-types` pass.
+- Known limitations: no audio-device selection UI; microphone permissions depend on OS/Electron prompts; no VAD or streaming transcription.
+- Next: Stage 9 — Piper text-to-speech.
+
 ## Latest stage report
 
-_Stage 7 complete; 58 tests passing._
+_Stage 8 complete; 62 tests passing._
