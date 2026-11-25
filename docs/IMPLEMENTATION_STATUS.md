@@ -195,6 +195,13 @@ Full evidence and limitations: `docs/IMPLEMENTATION_REPORT.md`.
 - Built installer: `frontend/installer/Holobox-Kiosk-0.1.0-x64.exe` (~98 MB, SHA-256 `66c3728a...08c1d`, NSIS/PE32 stub, x64 app binary). Verified asar contains avatar, MediaPipe model/WASM, React/Three bundles and no backend/.env/AI files or secrets.
 - Verification: backend 88 tests pass; frontend build/typecheck/contract check pass; first-run setup screen and generated config verified; configured launch shows courses and avatar; renderer sees no token/URL; backend-offline shows clear status without crash; installer built successfully on macOS. Windows hardware execution NOT performed (no Windows PC here).
 
+## Cross-platform configuration fix (2026-11-25)
+
+- Root causes: installer commit used `VITE_DEV_SERVER_URL` to decide dev mode, so `npm run electron` on macOS had no backend URL and showed the Windows setup screen; Electron used the generic `Application Support/Electron` userData dir.
+- Fixed `frontend/electron/main.ts`: platform chosen with `app.isPackaged`; explicit `Holobox Kiosk` userData dir on macOS/Windows; separate dev config (`kiosk-config.dev.json`, localhost default, dev token fallback from local `backend/.env`) and production config (`kiosk-config.json`, no localhost fallback); safe migration of legacy configs without overwrite; app:info exposes paths for verification.
+- Version bumped to 0.1.1. New installer `frontend/installer/Holobox-Kiosk-0.1.1-x64.exe`, SHA-256 `4d828bdfbdf821d82d6e8736f35b30cd319377a98306d448f04cfd74e5b802c3`. Old v0.1.0 installer retained and byte-identical (`66c3728a...08c1d`).
+- Verified on macOS: backend 88 tests pass; frontend build/electron build/API checks pass; dev launch with no env shows kiosk UI, correct app-specific config path, courses load, mic transitions work, backend-offline status/graceful failure works; packaged asar contains fixed main logic, avatar/MediaPipe assets and no token. Windows hardware not tested; production setup/persistence logic verified statically and by earlier config-file tests.
+
 ## Latest stage report
 
-_Windows x64 NSIS installer built and statically verified; Windows runtime testing remains an explicit hardware checklist._
+_macOS dev experience restored; v0.1.1 Windows installer built with platform-specific config; Windows hardware still untested._

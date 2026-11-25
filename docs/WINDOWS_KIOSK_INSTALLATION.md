@@ -13,14 +13,16 @@ Windows by this installer.
 
 ## Installer
 
-Built artifact (gitignored, not committed):
+Built artifacts (gitignored, not committed):
 
 ```
-frontend/installer/Holobox-Kiosk-0.1.0-x64.exe
+frontend/installer/Holobox-Kiosk-0.1.1-x64.exe   <- CURRENT
+frontend/installer/Holobox-Kiosk-0.1.0-x64.exe   <- previous release, retained
 ```
 
 - Size: ~98 MB
-- SHA-256: `66c3728a447b0dfbf6c66e73938198c84251e7413cb7c5667dec654db9f08c1d`
+- Current SHA-256 (v0.1.1): `4d828bdfbdf821d82d6e8736f35b30cd319377a98306d448f04cfd74e5b802c3`
+- Previous SHA-256 (v0.1.0): `66c3728a447b0dfbf6c66e73938198c84251e7413cb7c5667dec654db9f08c1d`
 - Target: Windows x64 (the application binary inside is PE32+ x86-64)
 - Built with: `electron-builder` 25.1.8, NSIS target
 - App name: **Holobox Kiosk** (`com.holobox.kiosk`)
@@ -33,7 +35,7 @@ architecture.
 
 ## Install
 
-1. Copy `Holobox-Kiosk-0.1.0-x64.exe` to the Windows mini PC.
+1. Copy `Holobox-Kiosk-0.1.1-x64.exe` to the Windows mini PC.
 2. Double-click and follow the NSIS prompts. Installation is per-user by
    default; choose a destination when offered.
 3. Start Menu shortcut: **Holobox Kiosk**. A desktop shortcut is also created.
@@ -47,6 +49,10 @@ The kiosk reads an operator-owned JSON file on first run and on every restart:
 ```
 %APPDATA%\Holobox Kiosk\kiosk-config.json
 ```
+
+The app explicitly sets its userData directory to `Holobox Kiosk` on both macOS
+and Windows. Existing config files from older/generic directories are migrated
+without overwriting valid targets; see `docs/CONFIGURATION.md`.
 
 Open it with Notepad. Example (replace with your MacBook's actual LAN address):
 

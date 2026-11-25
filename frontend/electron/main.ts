@@ -21,13 +21,36 @@ interface AppSettings {
   greetingText: string;
 }
 
-// Development-only fallback. A packaged kiosk has NO localhost default: it must
+// Explicit app identity: never use Electron's generic userData directory.
+const APP_NAME = 'Holobox Kiosk';
+app.setName(APP_NAME);
+const APP_DATA_ROOT = app.getPath('appData');
+const USER_DATA_DIR = path.join(APP_DATA_ROOT, APP_NAME);
+app.setPath('userData', USER_DATA_DIR);
+
+// Development-only fallback. A PACKAGED kiosk has NO localhost default: it must
 // be configured with the MacBook's LAN address via kiosk-config.json or env.
+// `app.isPackaged` is the reliable signal; VITE_DEV_SERVER_URL only controls
+// whether the renderer is loaded from the Vite dev server.
 const DEV_BACKEND_URL = 'http://127.0.0.1:8000';
-const IS_DEV = Boolean(process.env.VITE_DEV_SERVER_URL);
+const IS_PACKAGED = app.isPackaged;
+const USE_DEV_SERVER = Boolean(process.env.VITE_DEV_SERVER_URL);
+
+/** Dev convenience only: read the local backend's kiosk token, never in a packaged app. */
+function localDevKioskToken(): string {
+  if (IS_PACKAGED) return '';
+  try {
+    const backendEnv = path.join(__dirname, '..', '..', 'backend', '.env');
+    const contents = fs.readFileSync(backendEnv, 'utf8');
+    const match = /^HOLOBOX_KIOSK_TOKEN=(.*)$/m.exec(contents);
+    return match ? match[1].trim().replace(/^["']|["']$/g, '') : '';
+  } catch {
+    return '';
+  }
+}
 
 const DEFAULT_SETTINGS: AppSettings = {
-  backendUrl: process.env.HOLOBOX_BACKEND_URL || (IS_DEV ? DEV_BACKEND_URL : ''),
+  backendUrl: process.env.HOLOBOX_BACKEND_URL || (IS_PACKAGED ? '' : DEV_BACKEND_URL),
   apiToken: '',
   userId: 'local-user',
   voiceInputEnabled: true,
@@ -35,7 +58,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   sttModel: 'base',
   ttsVoice: '',
   language: '',
-  kioskToken: process.env.HOLOBOX_KIOSK_TOKEN || '',
+  kioskToken: process.env.HOLOBOX_KIOSK_TOKEN || localDevKioskToken(),
   courseId: process.env.HOLOBOX_KIOSK_COURSE || '',
   personDetectionEnabled: process.env.HOLOBOX_PERSON_DETECTION_ENABLED !== 'false',
   personDetectionConfidence: Number(process.env.HOLOBOX_PERSON_CONFIDENCE || 0.6),
@@ -69,8 +92,73 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
-const configFile = () => path.join(app.getPath('userData'), 'kiosk-config.json');
+// Development and production use separate config files in the same app-specific dir.
+const SETTINGS_FILE_NAME = IS_PACKAGED ? 'settings.json' : 'settings.dev.json';
+const CONFIG_FILE_NAME = IS_PACKAGED ? 'kiosk-config.json' : 'kiosk-config.dev.json';
+const settingsFile = () => path.join(USER_DATA_DIR, SETTINGS_FILE_NAME);
+const configFile = () => path.join(USER_DATA_DIR, CONFIG_FILE_NAME);
+
+/**
+ * Migrate configs from older/generic Electron userData locations without ever
+ * overwriting an existing target. Legacy settings.json may contain the old
+ * backend URL/token; those are copied into a NEW production config only when
+ * none exists, so existing deployments keep working after upgrade.
+ */
+function migrateLegacyConfigs(): void {
+  fs.mkdirSync(USER_DATA_DIR, { recursive: true });
+  const legacyDirs = [
+    path.join(APP_DATA_ROOT, 'Electron'),
+    path.join(APP_DATA_ROOT, 'Holobox RAG'),
+    path.join(APP_DATA_ROOT, 'holobox-kiosk'),
+    path.join(APP_DATA_ROOT, 'holobox-rag-frontend'),
+  ];
+  const prodConfig = path.join(USER_DATA_DIR, 'kiosk-config.json');
+  const prodSettings = path.join(USER_DATA_DIR, 'settings.json');
+
+  for (const legacyDir of legacyDirs) {
+    if (!fs.existsSync(legacyDir)) continue;
+    for (const name of ['kiosk-config.json', 'settings.json']) {
+      const source = path.join(legacyDir, name);
+      const target = path.join(USER_DATA_DIR, name);
+      if (fs.existsSync(source) && !fs.existsSync(target)) {
+        try {
+          fs.copyFileSync(source, target);
+          console.log(`Migrated ${name} from ${legacyDir}`);
+        } catch (error) {
+          console.warn(`Could not migrate ${name}: ${String(error)}`);
+        }
+      }
+    }
+  }
+
+  if (fs.existsSync(prodConfig)) return;
+  let remembered: Record<string, unknown> = {};
+  for (const legacyDir of legacyDirs) {
+    for (const name of ['kiosk-config.json', 'settings.json']) {
+      const source = path.join(legacyDir, name);
+      if (!fs.existsSync(source)) continue;
+      remembered = { ...readJson(source), ...remembered };
+    }
+  }
+  const backendUrl = remembered.backendUrl;
+  const kioskToken = remembered.kioskToken ?? remembered.apiToken;
+  const courseId = remembered.courseId;
+  if (typeof backendUrl === 'string' && backendUrl.trim()) {
+    fs.writeFileSync(
+      prodConfig,
+      JSON.stringify(
+        {
+          backendUrl,
+          kioskToken: typeof kioskToken === 'string' ? kioskToken : '',
+          courseId: typeof courseId === 'string' ? courseId : '',
+        },
+        null,
+        2,
+      ),
+    );
+    console.log('Migrated remembered backend configuration to kiosk-config.json');
+  }
+}
 
 const SAFE_KEYS: Array<keyof AppSettings> = [
   'courseId', 'language', 'voiceInputEnabled', 'voiceOutputEnabled', 'sttModel', 'ttsVoice',
@@ -86,14 +174,18 @@ function readJson(file: string): Record<string, unknown> {
   }
 }
 
-/** Creates a blank operator config on first run. Never overwrite an existing one. */
+/** Creates a first-run config. Dev gets localhost; production stays unconfigured. */
 function ensureConfigFile(): void {
   if (fs.existsSync(configFile())) return;
   fs.mkdirSync(path.dirname(configFile()), { recursive: true });
   fs.writeFileSync(
     configFile(),
     JSON.stringify(
-      { backendUrl: '', kioskToken: '', courseId: process.env.HOLOBOX_KIOSK_COURSE || '' },
+      {
+        backendUrl: IS_PACKAGED ? '' : DEV_BACKEND_URL,
+        kioskToken: '',
+        courseId: process.env.HOLOBOX_KIOSK_COURSE || '',
+      },
       null,
       2,
     ),
@@ -106,10 +198,20 @@ function loadSettings(): AppSettings {
     SAFE_KEYS.filter((key) => key in legacy).map((key) => [key, legacy[key]]),
   );
   const operator = readJson(configFile());
+  // An empty backendUrl in a DEV config means "use the local default"; in a
+  // packaged app it deliberately means "not configured" (show setup screen).
+  const usableOperator = IS_PACKAGED
+    ? operator
+    : Object.fromEntries(
+        Object.entries(operator).filter(
+          ([key, value]) =>
+            !((key === 'backendUrl' || key === 'kioskToken' || key === 'apiToken') && !value),
+        ),
+      );
   return {
     ...DEFAULT_SETTINGS,
     ...safeLegacy,
-    ...operator,
+    ...usableOperator,
     ...(process.env.HOLOBOX_BACKEND_URL ? { backendUrl: process.env.HOLOBOX_BACKEND_URL } : {}),
     ...(process.env.HOLOBOX_KIOSK_TOKEN ? { kioskToken: process.env.HOLOBOX_KIOSK_TOKEN } : {}),
   } as AppSettings;
@@ -151,7 +253,13 @@ ipcMain.handle('config:open', async () => {
   const error = await shell.openPath(configFile());
   return error === '';
 });
-ipcMain.handle('app:info', () => ({ version: app.getVersion(), platform: process.platform }));
+ipcMain.handle('app:info', () => ({
+  version: app.getVersion(),
+  platform: process.platform,
+  packaged: IS_PACKAGED,
+  userDataPath: USER_DATA_DIR,
+  configPath: configFile(),
+}));
 
 ipcMain.handle('api:request', async (_event, request: ApiRequest) => {
   const settings = loadSettings();
@@ -249,8 +357,9 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  migrateLegacyConfigs();
   ensureConfigFile();
-  const assetRoot = IS_DEV
+  const assetRoot = USE_DEV_SERVER
     ? path.join(__dirname, '..', 'public')
     : path.join(__dirname, '..', 'dist');
   protocol.registerFileProtocol('holobox', (request, callback) => {
