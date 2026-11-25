@@ -16,13 +16,15 @@ Windows by this installer.
 Built artifacts (gitignored, not committed):
 
 ```
-frontend/installer/Holobox-Kiosk-0.1.2-x64.exe   <- CURRENT
+frontend/installer/Holobox-Kiosk-0.1.3-x64.exe   <- CURRENT
+frontend/installer/Holobox-Kiosk-0.1.2-x64.exe   <- previous release, retained
 frontend/installer/Holobox-Kiosk-0.1.1-x64.exe   <- previous release, retained
 frontend/installer/Holobox-Kiosk-0.1.0-x64.exe   <- previous release, retained
 ```
 
 - Size: ~98 MB
-- Current SHA-256 (v0.1.2): `f38e31885e146c0bd52e44b6c7af2cdb3ba032fd0e04a50d15d4711f87fa6488`
+- Current SHA-256 (v0.1.3): `cf5b07ab995d384048a24b4603154382d1236c76b9a85341481ea40a0c6a0ece`
+- Previous SHA-256 (v0.1.2): `f38e31885e146c0bd52e44b6c7af2cdb3ba032fd0e04a50d15d4711f87fa6488`
 - Previous SHA-256 (v0.1.1): `4d828bdfbdf821d82d6e8736f35b30cd319377a98306d448f04cfd74e5b802c3`
 - Previous SHA-256 (v0.1.0): `66c3728a447b0dfbf6c66e73938198c84251e7413cb7c5667dec654db9f08c1d`
 - Target: Windows x64 (the application binary inside is PE32+ x86-64)
@@ -37,7 +39,7 @@ architecture.
 
 ## Install
 
-1. Copy `Holobox-Kiosk-0.1.2-x64.exe` to the Windows mini PC.
+1. Copy `Holobox-Kiosk-0.1.3-x64.exe` to the Windows mini PC.
 2. Double-click and follow the NSIS prompts. Installation is per-user by
    default; choose a destination when offered.
 3. Start Menu shortcut: **Holobox Kiosk**. A desktop shortcut is also created.

@@ -225,6 +225,14 @@ Full evidence and limitations: `docs/IMPLEMENTATION_REPORT.md`.
 - Backend unchanged. Tests: 110 passed (4 new course-sync tests). Frontend build/electron build/API type check pass. Live Electron verified new courses appear without restart, selection changes active course, cross-course citation correct, switching clears stale context, backend outage/retry works.
 - Installer needs rebuilding before next Windows deployment; not performed. Not pushed.
 
+## Release v0.1.3 (2026-11-25)
+
+- Includes PDF letter-spacing normalization, safe re-extraction on reindex, and dynamic course-list synchronization in the kiosk.
+- Verification: backend 110 passed; frontend build/electron build/API type check pass; Windows x64 NSIS installer built and statically validated (avatar + MediaPipe assets present, no secrets/databases/documents in asar, no localhost production fallback).
+- Installer: `frontend/installer/Holobox-Kiosk-0.1.3-x64.exe`, SHA-256 `cf5b07ab995d384048a24b4603154382d1236c76b9a85341481ea40a0c6a0ece`. Older installers retained.
+- Security audit: no secrets in current tree or Git history; `.env`, DB, ChromaDB, uploads and installer remain gitignored.
+- Windows physical hardware testing not performed.
+
 ## Latest stage report
 
-_Course list now synchronizes in the running kiosk; backend unchanged; installer rebuild and push pending._
+_Release v0.1.3 source verified and installer built; publication pending push/release._
