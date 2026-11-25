@@ -210,6 +210,14 @@ Full evidence and limitations: `docs/IMPLEMENTATION_REPORT.md`.
 - Tests: backend 96 passed (new E2E pipeline, duplicate-approval, embedding-failure, retry, approval/course isolation tests); frontend build/electron build/API type check pass. Real Ollama E2E: unique ZEBRA-9901 doc uploaded unapproved then re-uploaded approved -> same ID, approved=True, 384-dim vector in ChromaDB, kiosk query returned the answer "37.6 degrees Celsius" with correct citation; other course returned 0 sources; nonexistent course 404.
 - New installer: `frontend/installer/Holobox-Kiosk-0.1.2-x64.exe`, SHA-256 `f38e31885e146c0bd52e44b6c7af2cdb3ba032fd0e04a50d15d4711f87fa6488`. Older installers retained byte-identical.
 
+## PDF letter-spacing fix (2026-11-25)
+
+- Root cause confirmed: pypdf emits double spaces between words and single spaces between letters for the affected PDF; `normalize_text()` collapsed both, destroying word boundaries. Not an upload/approval/course/ChromaDB problem.
+- Changed `backend/app/ingestion/extractors.py` with conservative idempotent `normalize_letter_spacing()`; PDF text normalized before chunking. Reindex now re-extracts from the stored original and replaces chunks/vectors safely.
+- Tests: extraction regressions + reindex re-extraction added; **106 backend tests passed**.
+- Reindexed only `deeksha-resume.pdf` (`e2ad...`) on real data at `backend/data/holobox.db` / `backend/data/chroma`; 5 bad chunks → 3 normalized chunks; still ready/approved/general course `gpu-architecture`.
+- Retrieval before: hackathons 0 hits; projects retrieved wrong GPU doc (0.173). After: hackathons resume ranks #1 at 0.416; projects resume #1 at 0.490; API cites `deeksha-resume.pdf` and answers from it. Unrelated question and other-course checks still pass. No threshold change. No frontend/installer changes; no push.
+
 ## Latest stage report
 
-_Document ingestion/retrieval bug fixed and verified end to end with real embeddings, ChromaDB and Ollama; v0.1.2 installer built; Windows hardware still untested._
+_PDF letter-spacing fixed and real document reindexed; RAG API now cites the resume; no push/installer in this task._

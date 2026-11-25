@@ -2,6 +2,8 @@
 
 import pytest
 
+from tests.helpers import make_pdf
+
 UNIQUE = "Project Orion test fact 37.6 degrees Celsius ZEBRA-7744"
 CONTENT = f"Orion Lab Note\n\n{UNIQUE}\n\nOnly this document contains ZEBRA-7744.\n".encode()
 
@@ -101,3 +103,34 @@ def test_new_document_is_retrievable_by_student_query(client):
     assert body["retrieved_context_available"] is True
     assert any(source["document_id"] == uploaded["id"] for source in body["sources"])
     assert any("ZEBRA-7744" in source["excerpt"] for source in body["sources"])
+
+
+def test_reindex_reextracts_and_replaces_legacy_bad_chunks(client):
+    uploaded = client.post(
+        "/api/v1/documents",
+        files={"file": ("spaced.pdf", make_pdf(["H e l l o  W o r l d ."]), "application/pdf")},
+        data={"course_id": "gpu-architecture", "approved": "true"},
+        headers={"X-User-Id": "teacher"},
+    ).json()
+    document_id = uploaded["id"]
+    repository = client.app.state.repository
+
+    # Simulate a legacy document whose stored chunks were extracted badly.
+    repository.delete_chunks(document_id)
+    repository.add_chunks(document_id, [("legacy-chunk", 1, "H e l l o  W o r l d .")])
+
+    response = client.post(
+        f"/api/v1/documents/{document_id}/reindex",
+        headers={"X-User-Id": "teacher"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ready"
+    assert body["indexed_chunks"] == body["chunk_count"]
+    assert body["approved"] is True and body["course_id"] == "gpu-architecture"
+
+    chunks = repository.get_chunks(document_id)
+    assert len(chunks) == body["chunk_count"]
+    assert "Hello World." in chunks[0]["text"]
+    assert "H e l l o" not in chunks[0]["text"]
+    assert len(client.app.state.vector_store.rows) == len(chunks)

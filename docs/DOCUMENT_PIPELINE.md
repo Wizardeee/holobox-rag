@@ -56,9 +56,21 @@ from student retrieval.
 
 ## Safe retries
 
-- `POST /api/v1/documents/{id}/reindex` clears vectors and re-embeds stored
-  chunks; it never creates duplicate chunks.
+- `POST /api/v1/documents/{id}/reindex` now **re-extracts from the stored
+  original file**, replaces stored chunks, then clears and rebuilds vectors. It
+  preserves document ID, course, approval, owner and file location. It never
+  creates duplicate chunks or vectors.
 - Re-uploading identical bytes reuses the same document ID and reindexes.
+
+## Text normalization (PDF letter spacing)
+
+Some PDFs encode word gaps as double spaces and letter gaps as single spaces.
+The old `normalize_text()` collapsed both to one space, producing unusable text
+such as `D E E K S H A  A R A L E L I`. `normalize_letter_spacing()` now uses
+that double-space signal to rebuild words line-by-line, leaves ordinary prose
+unchanged, handles punctuation/numbers/bullets and is idempotent. It is applied
+before chunking and embedding. Existing affected documents must be reindexed to
+repair already-stored chunks and vectors.
 
 ## Operational notes
 

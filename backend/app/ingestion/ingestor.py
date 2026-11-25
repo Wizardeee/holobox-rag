@@ -178,22 +178,84 @@ class Ingestor:
             )
 
     def reindex(self, document_id: str) -> int:
-        """Rebuild embeddings/vectors for an already-ingested document."""
+        """Re-extract from the stored original and replace chunks and vectors.
+
+        This repairs documents ingested before a text-normalization fix: the
+        previously stored chunks may contain unusable text, so merely
+        re-embedding them would preserve the defect. Course, approval, owner
+        and file location are left untouched.
+        """
         document = self.repository.get_document(document_id)
         if document is None:
             raise ValueError("Document not found")
         if self.indexer is None:
             raise RuntimeError("No indexer configured")
-        count = self.indexer.index_document(document_id)
-        self.repository.update_document(
-            document_id,
-            status=DocumentStatus.READY.value,
-            chunk_count=len(self.repository.get_chunks(document_id)),
-            indexed_chunks=count,
-            error=None,
-            updated_at=utcnow(),
-        )
-        return count
+
+        upload_dir = self.settings.uploads_dir / document_id
+        files = [item for item in upload_dir.iterdir() if item.is_file()] if upload_dir.exists() else []
+        if not files:
+            raise RuntimeError(f"Stored original file is missing for {document_id}")
+        source = files[0]
+
+        try:
+            content = source.read_bytes()
+            extracted = extract(source.name, content)
+            characters = sum(len(text) for _, text in extracted.pages)
+            if characters == 0:
+                raise ValueError("No text could be extracted from the stored original")
+            chunks = chunk_document(extracted, self.settings.chunk_size, self.settings.chunk_overlap)
+            if not chunks:
+                raise ValueError("Re-extraction produced no chunks")
+
+            # Replace chunks atomically enough: remove old rows first, then add new.
+            self.repository.delete_chunks(document_id)
+            self.repository.add_chunks(
+                document_id,
+                [(uuid4().hex, chunk.page_number, chunk.text) for chunk in chunks],
+            )
+            indexed = self.indexer.index_document(document_id)
+            if indexed != len(chunks):
+                raise RuntimeError(f"Indexed {indexed} of {len(chunks)} chunks")
+
+            self.repository.update_document(
+                document_id,
+                status=DocumentStatus.READY.value,
+                page_count=len(extracted.pages),
+                chunk_count=len(chunks),
+                indexed_chunks=indexed,
+                error=None,
+                updated_at=utcnow(),
+            )
+            logger.info(
+                "document_pipeline document_id=%s course_id=%s stage=reindexed characters=%s chunks=%s indexed=%s",
+                document_id,
+                document.course_id,
+                characters,
+                len(chunks),
+                indexed,
+            )
+            return indexed
+        except Exception as exc:
+            vector_store = getattr(self.indexer, "vector_store", None)
+            if vector_store is not None:
+                try:
+                    vector_store.delete_document(document_id)
+                except Exception:
+                    logger.exception("Could not clear partial vectors for %s", document_id)
+            self.repository.update_document(
+                document_id,
+                status=DocumentStatus.FAILED.value,
+                error=str(exc)[:500],
+                indexed_chunks=0,
+                updated_at=utcnow(),
+            )
+            logger.error(
+                "document_pipeline document_id=%s course_id=%s stage=reindex_failed error=%s",
+                document_id,
+                document.course_id,
+                str(exc)[:300],
+            )
+            raise
 
     def delete_files(self, document_id: str) -> None:
         import shutil
