@@ -88,6 +88,7 @@ class DocumentInfo(BaseModel):
     sha256: str
     page_count: int | None = None
     chunk_count: int = 0
+    indexed_chunks: int = 0
     error: str | None = None
     created_at: datetime
     course_id: str = "general"

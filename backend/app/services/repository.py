@@ -100,10 +100,16 @@ class Repository:
                 "approved": "INTEGER NOT NULL DEFAULT 1",
                 "uploader": "TEXT NOT NULL DEFAULT ''",
                 "updated_at": "TEXT",
+                "indexed_chunks": "INTEGER NOT NULL DEFAULT 0",
             }.items():
                 if column not in columns:
                     conn.execute(f"ALTER TABLE documents ADD COLUMN {column} {definition}")
             conn.execute("UPDATE documents SET course_id='general' WHERE course_id IS NULL OR course_id=''")
+            # Backfill observability for documents indexed before this column existed.
+            conn.execute(
+                "UPDATE documents SET indexed_chunks = chunk_count "
+                "WHERE status = 'ready' AND (indexed_chunks IS NULL OR indexed_chunks = 0)"
+            )
             for course_id, name in seed_courses or []:
                 conn.execute(
                     "INSERT OR IGNORE INTO courses (id, name, active, created_at) VALUES (?, ?, 1, ?)",
@@ -125,6 +131,7 @@ class Repository:
             sha256=row["sha256"],
             page_count=row["page_count"],
             chunk_count=row["chunk_count"],
+            indexed_chunks=row["indexed_chunks"] if "indexed_chunks" in keys else 0,
             error=row["error"],
             created_at=datetime.fromisoformat(row["created_at"]),
             course_id=row["course_id"] if "course_id" in keys else "general",
@@ -143,8 +150,8 @@ class Repository:
             conn.execute(
                 """INSERT INTO documents
                    (id, name, scope, owner_id, status, size_bytes, sha256, page_count, chunk_count,
-                    error, created_at, course_id, subject_id, approved, uploader, updated_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    indexed_chunks, error, created_at, course_id, subject_id, approved, uploader, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     document.id,
                     document.name,
@@ -155,6 +162,7 @@ class Repository:
                     document.sha256,
                     document.page_count,
                     document.chunk_count,
+                    document.indexed_chunks,
                     document.error,
                     document.created_at.isoformat(),
                     document.course_id,
@@ -300,6 +308,10 @@ class Repository:
                     for index, (chunk_id, page, text) in enumerate(chunks)
                 ],
             )
+
+    def delete_chunks(self, document_id: str) -> None:
+        with self._connect() as conn:
+            conn.execute("DELETE FROM document_chunks WHERE document_id = ?", (document_id,))
 
     def get_chunks(self, document_id: str) -> list[dict[str, Any]]:
         with self._connect() as conn:

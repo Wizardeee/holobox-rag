@@ -113,7 +113,7 @@ without TLS, a real identity provider and a security review.
 
 ## F. Windows kiosk installer (built, not Windows-tested)
 
-`electron-builder` NSIS produces `frontend/installer/Holobox-Kiosk-0.1.1-x64.exe` (v0.1.1; v0.1.0 retained)
+`electron-builder` NSIS produces `frontend/installer/Holobox-Kiosk-0.1.2-x64.exe` (v0.1.2; older installers retained)
 (`npm run dist:win`). The Windows PC runs only Electron + the bundled frontend,
 Three.js avatar, MediaPipe WASM/model and local camera greeting. Configure the
 MacBook LAN URL and kiosk token in `%APPDATA%\Holobox Kiosk\kiosk-config.json`;

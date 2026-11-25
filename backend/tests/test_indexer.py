@@ -19,7 +19,19 @@ def test_indexer_indexes_chunks_and_is_idempotent(tmp_path):
     assert store.rows[0]["chunk"].document_name == "notes.txt"
 
 
-def test_indexer_handles_missing_document(tmp_path):
+import pytest
+
+
+def test_indexer_rejects_missing_document(tmp_path):
     repository = Repository(tmp_path / "db.sqlite")
     repository.init()
-    assert Indexer(repository, FakeEmbedder(), FakeVectorStore()).index_document("missing") == 0
+    with pytest.raises(ValueError, match="not found"):
+        Indexer(repository, FakeEmbedder(), FakeVectorStore()).index_document("missing")
+
+
+def test_indexer_rejects_missing_chunks(tmp_path):
+    repository = Repository(tmp_path / "db.sqlite")
+    repository.init()
+    repository.create_document(_document())
+    with pytest.raises(ValueError, match="no chunks"):
+        Indexer(repository, FakeEmbedder(), FakeVectorStore()).index_document("doc1")

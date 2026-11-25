@@ -1880,6 +1880,11 @@
             "title": "Chunk Count",
             "default": 0
           },
+          "indexed_chunks": {
+            "type": "integer",
+            "title": "Indexed Chunks",
+            "default": 0
+          },
           "error": {
             "anyOf": [
               {

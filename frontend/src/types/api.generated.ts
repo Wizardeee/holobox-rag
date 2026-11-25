@@ -425,6 +425,11 @@ export interface components {
              * @default 0
              */
             chunk_count: number;
+            /**
+             * Indexed Chunks
+             * @default 0
+             */
+            indexed_chunks: number;
             /** Error */
             error?: string | null;
             /**

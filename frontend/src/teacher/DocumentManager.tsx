@@ -110,7 +110,8 @@ export function DocumentManager({ course, subjects }: Props) {
               <strong>{document.name}</strong>
               <span>
                 {document.subject_id ?? 'No subject'} · {document.uploader} ·{' '}
-                {new Date(document.created_at).toLocaleString()} · {document.chunk_count} chunks
+                {new Date(document.created_at).toLocaleString()} · indexed{' '}
+                {document.indexed_chunks}/{document.chunk_count} chunks
                 {document.page_count ? ` · ${document.page_count} pages` : ''}
               </span>
               {document.error && <span className="teacher-error-inline">{document.error}</span>}

@@ -144,3 +144,70 @@ def test_document_reindex_approve_and_replace(secure_client):
     assert replaced.json()["name"] == "new.txt"
     assert replaced.json()["approved"] is False  # association preserved
     assert secure_client.get(f"/api/v1/documents/{document['id']}", headers=teacher).status_code == 404
+
+
+def test_approval_and_course_isolation_for_new_document(secure_client):
+    teacher = _teacher(secure_client)
+    kiosk = _kiosk()
+    unique = "ZEBRA-8842 uniquely indexed approval test"
+    content = f"Approval test\n\n{unique}\n".encode()
+
+    unapproved = secure_client.post(
+        "/api/v1/documents",
+        files={"file": ("approval.txt", content, "text/plain")},
+        data={"course_id": "gpu-architecture", "approved": "false"},
+        headers=teacher,
+    ).json()
+    question = "What is ZEBRA-8842?"
+    q = secure_client.post(
+        "/api/v1/query",
+        json={"question": question, "course_id": "gpu-architecture", "owner_id": "kiosk"},
+        headers=kiosk,
+    ).json()
+    assert unapproved["approved"] is False
+    assert all(s["document_id"] != unapproved["id"] for s in q.get("sources", []))
+
+    approved = secure_client.patch(
+        f"/api/v1/documents/{unapproved['id']}", json={"approved": True}, headers=teacher
+    ).json()
+    assert approved["approved"] is True
+    q = secure_client.post(
+        "/api/v1/query",
+        json={"question": question, "course_id": "gpu-architecture", "owner_id": "kiosk"},
+        headers=kiosk,
+    ).json()
+    assert any(s["document_id"] == unapproved["id"] for s in q.get("sources", []))
+
+    other = secure_client.post(
+        "/api/v1/query",
+        json={"question": question, "course_id": "general", "owner_id": "kiosk"},
+        headers=kiosk,
+    )
+    assert other.status_code == 403  # kiosk credential is restricted to one course
+
+
+def test_reupload_same_content_can_hide_document_from_kiosk(secure_client):
+    teacher = _teacher(secure_client)
+    kiosk = _kiosk()
+    content = b"HIDDEN-5193 same bytes reuploaded with approval removed"
+    first = secure_client.post(
+        "/api/v1/documents",
+        files={"file": ("hidden.txt", content, "text/plain")},
+        data={"course_id": "gpu-architecture", "approved": "true"},
+        headers=teacher,
+    ).json()
+    second = secure_client.post(
+        "/api/v1/documents",
+        files={"file": ("hidden.txt", content, "text/plain")},
+        data={"course_id": "gpu-architecture", "approved": "false"},
+        headers=teacher,
+    ).json()
+    assert second["id"] == first["id"]
+    assert second["approved"] is False
+    question = "What is HIDDEN-5193?"
+    q = secure_client.post(
+        "/api/v1/query",
+        json={"question": question, "course_id": "gpu-architecture", "owner_id": "kiosk"},
+        headers=kiosk,
+    ).json()
+    assert all(s["document_id"] != first["id"] for s in q.get("sources", []))

@@ -202,6 +202,14 @@ Full evidence and limitations: `docs/IMPLEMENTATION_REPORT.md`.
 - Version bumped to 0.1.1. New installer `frontend/installer/Holobox-Kiosk-0.1.1-x64.exe`, SHA-256 `4d828bdfbdf821d82d6e8736f35b30cd319377a98306d448f04cfd74e5b802c3`. Old v0.1.0 installer retained and byte-identical (`66c3728a...08c1d`).
 - Verified on macOS: backend 88 tests pass; frontend build/electron build/API checks pass; dev launch with no env shows kiosk UI, correct app-specific config path, courses load, mic transitions work, backend-offline status/graceful failure works; packaged asar contains fixed main logic, avatar/MediaPipe assets and no token. Windows hardware not tested; production setup/persistence logic verified statically and by earlier config-file tests.
 
+## Document ingestion visibility fix (2026-11-25)
+
+- Root cause: hash-based duplicate upload returned an existing document unchanged, so a re-upload with the approval checkbox changed never updated `approved` or reindexed vectors; a ready-but-unapproved document stayed invisible to the kiosk. No verification existed that embeddings were written before `READY`.
+- Backend changed: duplicate uploads now update metadata/approval and reindex in place; `Indexer` verifies vectors count/dimension, clears old vectors first and logs stage data; `Ingestor` marks `READY` only when `indexed_chunks == chunk_count`, else `FAILED` with partial vectors cleared; added `indexed_chunks` with migration/backfill; reindex sets chunk/index counts; structured stage logging.
+- Frontend changed: Admin Portal shows `indexed X/Y chunks`. API contract regenerated. Version bumped to 0.1.2.
+- Tests: backend 96 passed (new E2E pipeline, duplicate-approval, embedding-failure, retry, approval/course isolation tests); frontend build/electron build/API type check pass. Real Ollama E2E: unique ZEBRA-9901 doc uploaded unapproved then re-uploaded approved -> same ID, approved=True, 384-dim vector in ChromaDB, kiosk query returned the answer "37.6 degrees Celsius" with correct citation; other course returned 0 sources; nonexistent course 404.
+- New installer: `frontend/installer/Holobox-Kiosk-0.1.2-x64.exe`, SHA-256 `f38e31885e146c0bd52e44b6c7af2cdb3ba032fd0e04a50d15d4711f87fa6488`. Older installers retained byte-identical.
+
 ## Latest stage report
 
-_macOS dev experience restored; v0.1.1 Windows installer built with platform-specific config; Windows hardware still untested._
+_Document ingestion/retrieval bug fixed and verified end to end with real embeddings, ChromaDB and Ollama; v0.1.2 installer built; Windows hardware still untested._

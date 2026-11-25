@@ -23,15 +23,39 @@ class Indexer:
         self.vector_store = vector_store
 
     def index_document(self, document_id: str) -> int:
+        """Embed and index all chunks. Returns the number actually written.
+
+        Raises on any mismatch so callers never mark a document READY unless
+        every chunk has a vector in the persistent store.
+        """
         document = self.repository.get_document(document_id)
         if document is None:
-            return 0
+            raise ValueError(f"Document {document_id} not found")
+
         chunks = self.repository.get_chunks(document_id)
-        # Clear first so re-indexing is idempotent.
+        logger.info(
+            "document_pipeline document_id=%s course_id=%s stage=indexing chunks=%s",
+            document_id,
+            document.course_id,
+            len(chunks),
+        )
+        # Clear first so re-indexing is idempotent and cannot leave stale vectors.
         self.vector_store.delete_document(document_id)
         if not chunks:
-            return 0
-        vectors = self.embedder.embed([chunk["text"] for chunk in chunks])
+            raise ValueError(f"Document {document_id} has no chunks to index")
+
+        texts = [chunk["text"] for chunk in chunks]
+        vectors = self.embedder.embed(texts)
+        if len(vectors) != len(chunks):
+            raise RuntimeError(
+                f"Embedding count mismatch for {document_id}: {len(vectors)} vectors for {len(chunks)} chunks"
+            )
+        if not vectors or not vectors[0]:
+            raise RuntimeError(f"Embeddings are empty for {document_id}")
+        dimension = len(vectors[0])
+        if any(len(vector) != dimension for vector in vectors):
+            raise RuntimeError(f"Inconsistent embedding dimensions for {document_id}")
+
         self.vector_store.add(
             document_id,
             [
@@ -52,5 +76,13 @@ class Indexer:
             ],
             vectors,
         )
-        logger.debug("Indexed %s chunks for document %s", len(chunks), document_id)
+        self.repository.update_document(document_id, indexed_chunks=len(chunks))
+        logger.info(
+            "document_pipeline document_id=%s course_id=%s stage=indexed chunks=%s vectors=%s dim=%s",
+            document_id,
+            document.course_id,
+            len(chunks),
+            len(vectors),
+            dimension,
+        )
         return len(chunks)
