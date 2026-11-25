@@ -167,6 +167,17 @@ export function useKioskConversation(courseId: string | null, language?: string)
     }
   }, [ask, language, setKioskState]);
 
+  // Course switches must not retain the previous course's transcript, answer
+  // or citations. Stop any in-flight playback as part of the transition.
+  useEffect(() => {
+    stopAudio();
+    setTranscript('');
+    setTurn(null);
+    setError(null);
+    setGreeting(false);
+    setKioskState('idle');
+  }, [courseId, setKioskState, stopAudio]);
+
   const stopListening = useCallback(() => {
     recorder.current?.stop();
     recorder.current = null;

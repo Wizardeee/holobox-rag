@@ -218,6 +218,13 @@ Full evidence and limitations: `docs/IMPLEMENTATION_REPORT.md`.
 - Reindexed only `deeksha-resume.pdf` (`e2ad...`) on real data at `backend/data/holobox.db` / `backend/data/chroma`; 5 bad chunks → 3 normalized chunks; still ready/approved/general course `gpu-architecture`.
 - Retrieval before: hackathons 0 hits; projects retrieved wrong GPU doc (0.173). After: hackathons resume ranks #1 at 0.416; projects resume #1 at 0.490; API cites `deeksha-resume.pdf` and answers from it. Unrelated question and other-course checks still pass. No threshold change. No frontend/installer changes; no push.
 
+## Course list synchronization (2026-11-25)
+
+- Root cause: KioskApp fetched `/api/v1/courses` only on mount; backend correctly persisted and returned new courses on every request. Verified live: course created while kiosk running did not appear until a refresh.
+- Fixed in frontend: refresh on startup, selector focus/mouse-down, manual Refresh courses button, window focus, and 30s idle polling; preserve valid selected course, clear stale conversation on course switch, graceful empty/error/offline states.
+- Backend unchanged. Tests: 110 passed (4 new course-sync tests). Frontend build/electron build/API type check pass. Live Electron verified new courses appear without restart, selection changes active course, cross-course citation correct, switching clears stale context, backend outage/retry works.
+- Installer needs rebuilding before next Windows deployment; not performed. Not pushed.
+
 ## Latest stage report
 
-_PDF letter-spacing fixed and real document reindexed; RAG API now cites the resume; no push/installer in this task._
+_Course list now synchronizes in the running kiosk; backend unchanged; installer rebuild and push pending._
