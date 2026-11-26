@@ -1,6 +1,6 @@
 {
   "name": "holobox-kiosk",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Holobox student kiosk — local frontend for the Holobox RAG backend",
   "author": "Holobox Project",
   "private": true,

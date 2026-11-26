@@ -83,6 +83,9 @@ test('the model face is on -Z and the kiosk turns it toward the +Z camera', asyn
 test('the real loaded model responds to the controller', async () => {
   const gltf = await loadVrm();
   const camera = new THREE.PerspectiveCamera(32, 1, 0.01, 100);
+  // Match the kiosk: the VRM is turned 180° before posing and framing.
+  gltf.scene.rotation.y = Math.PI;
+  gltf.scene.updateMatrixWorld(true);
   const controller = new AvatarController(gltf.scene, gltf.animations, camera, gltf);
   const analyser = {
     getByteTimeDomainData(array: Uint8Array) {
@@ -113,6 +116,18 @@ test('the real loaded model responds to the controller', async () => {
   const upperY = upper.getWorldPosition(new THREE.Vector3()).y;
   const lowerY = lower.getWorldPosition(new THREE.Vector3()).y;
   assert.ok(lowerY < upperY - 0.1, `arm did not relax downward (${upperY} -> ${lowerY})`);
+
+  // Hands sit beside the hips, forward of the thighs, and are mirrored.
+  const handPositions = (['left', 'right'] as const).map((side) => {
+    const hand = boneNode(`${side}Hand`);
+    return hand.getWorldPosition(new THREE.Vector3());
+  });
+  const elbow = lower.getWorldPosition(new THREE.Vector3());
+  assert.ok(Math.abs(elbow.x) > 0.2, `elbow too close to torso: ${elbow.x}`);
+  assert.ok(handPositions[0].x > 0.24 && handPositions[1].x < -0.24, 'hands are not separated from the torso');
+  assert.ok(handPositions.every((hand) => hand.z > 0.08), 'hands are not forward of the thighs');
+  assert.ok(handPositions.every((hand) => hand.y > 0.8 && hand.y < 1.1), 'hands are not beside the hips');
+  assert.ok(Math.abs(handPositions[0].x + handPositions[1].x) < 0.01, 'arms are not symmetrical');
 
   // Speaking stays subtle even with a loud analyser.
   let maxJaw = 0;

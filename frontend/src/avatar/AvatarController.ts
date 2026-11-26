@@ -95,7 +95,13 @@ export class AvatarController {
     }
   }
 
-  /** Lower the T-pose arms into a relaxed, slightly forward resting stance. */
+  /**
+   * Correct the bind-pose arms, which are a straight horizontal T-pose.
+   * Targets are WORLD directions after the model is turned to face the student:
+   * +X is the viewer's right, +Z is toward the camera. The arms are angled
+   * outward, forward at the elbow, and the hands are pitched forward so they
+   * hang beside the hips instead of intersecting the thighs.
+   */
   private applyRestingPose(
     humanBones: Array<{ bone: string; node: number }>,
     nodeObjects: Map<number, THREE.Object3D>,
@@ -106,10 +112,11 @@ export class AvatarController {
       if (object) bones.set(entry.bone, object);
     }
     const rotateToward = (bone: THREE.Object3D, child: THREE.Object3D, target: THREE.Vector3) => {
+      this.model.updateMatrixWorld(true);
       const from = child.getWorldPosition(new THREE.Vector3()).sub(bone.getWorldPosition(new THREE.Vector3())).normalize();
       const parentWorld = new THREE.Quaternion();
       bone.parent?.getWorldQuaternion(parentWorld);
-      const delta = new THREE.Quaternion().setFromUnitVectors(from, target.normalize());
+      const delta = new THREE.Quaternion().setFromUnitVectors(from, target.clone().normalize());
       bone.quaternion.copy(parentWorld.clone().invert().multiply(delta).multiply(parentWorld).multiply(bone.quaternion));
       this.model.updateMatrixWorld(true);
     };
@@ -117,10 +124,13 @@ export class AvatarController {
       const upper = bones.get(`${side}UpperArm`);
       const lower = bones.get(`${side}LowerArm`);
       const hand = bones.get(`${side}Hand`);
+      const finger = bones.get(`${side}MiddleProximal`);
       if (!upper || !lower || !hand) continue;
-      const sign = side === 'right' ? 1 : -1;
-      rotateToward(upper, lower, new THREE.Vector3(sign * 0.12, -0.98, 0.1));
-      rotateToward(lower, hand, new THREE.Vector3(sign * 0.04, -0.96, 0.28));
+      // In world space the left arm is on +X after the 180° model turn.
+      const sign = side === 'left' ? 1 : -1;
+      rotateToward(upper, lower, new THREE.Vector3(sign * 0.24, -0.95, 0.2));
+      rotateToward(lower, hand, new THREE.Vector3(sign * 0.12, -0.86, 0.5));
+      if (finger) rotateToward(hand, finger, new THREE.Vector3(sign * 0.02, -0.72, 0.69));
     }
   }
 
