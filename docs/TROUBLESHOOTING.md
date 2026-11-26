@@ -6,8 +6,8 @@
 | Kiosk gets 401 | Missing/rotated kiosk token | Set `HOLOBOX_KIOSK_TOKEN` in the shell launching Electron to the value in `backend/.env`. |
 | Kiosk query 403 `Course is not permitted` | Course outside `HOLOBOX_KIOSK_COURSES` or no course selected | Set `HOLOBOX_KIOSK_COURSES` or select a permitted course on the kiosk. |
 | Teacher sees document but kiosk does not | Document hidden (`approved=false`) or in another course | Use the portal's **Approve** button and confirm the course association. |
-| Avatar area is blank | GLB missing or WebGL disabled | Confirm `dist/avatar/sabrina_3d_avatar.glb` and enable WebGL/hardware acceleration. |
-| Avatar doesn't move its mouth | The model has no morph targets or jaw bone (by design) | Expected: amplitude-driven head motion + on-screen speaking indicator, not phoneme lip sync. |
+| Avatar area is blank | VRM missing or WebGL disabled | Confirm `dist/avatar/business-female-04.vrm` and enable WebGL/hardware acceleration. |
+| Avatar mouth movement looks generic | No phoneme analysis is performed | Expected: audio-amplitude-driven cycling of the model's own vowel morphs, not phoneme-level lip sync. |
 
 | Backend health returns but Electron says "Backend offline" | Backend URL wrong or backend not running | Start `uvicorn app.main:app --host 127.0.0.1 --port 8000`; check Settings → Backend URL; click "Test backend connection". |
 | Electron shows a blank window | Stale build | Run `npm run build && npm run electron:build`, then relaunch. |

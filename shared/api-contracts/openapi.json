@@ -1533,6 +1533,17 @@
   },
   "components": {
     "schemas": {
+      "AnswerSource": {
+        "type": "string",
+        "enum": [
+          "documents",
+          "general_knowledge",
+          "mixed",
+          "unknown"
+        ],
+        "title": "AnswerSource",
+        "description": "Where the assistant's answer came from."
+      },
       "Body_replace_document_api_v1_documents__document_id__replace_post": {
         "properties": {
           "file": {
@@ -1962,6 +1973,17 @@
         ],
         "title": "DocumentStatus"
       },
+      "DocumentSupport": {
+        "type": "string",
+        "enum": [
+          "full",
+          "partial",
+          "none",
+          "uncertain"
+        ],
+        "title": "DocumentSupport",
+        "description": "Whether retrieved course material actually supported the answer."
+      },
       "DocumentUpdate": {
         "properties": {
           "approved": {
@@ -2273,6 +2295,19 @@
               }
             ],
             "title": "Warning"
+          },
+          "answer_source": {
+            "$ref": "#/components/schemas/AnswerSource",
+            "default": "general_knowledge"
+          },
+          "document_support": {
+            "$ref": "#/components/schemas/DocumentSupport",
+            "default": "none"
+          },
+          "uncertain": {
+            "type": "boolean",
+            "title": "Uncertain",
+            "default": false
           }
         },
         "type": "object",

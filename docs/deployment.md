@@ -78,9 +78,11 @@ Electron main reads them from the environment / local settings and injects the
 bearer header in its IPC bridge. The kiosk opens fullscreen; set
 `HOLOBOX_KIOSK_FULLSCREEN=false` for development.
 
-The avatar model is copied to `frontend/public/avatar/sabrina_3d_avatar.glb` and
-bundled into `dist/avatar/`. To use a different asset, set `VITE_AVATAR_MODEL_URL`
-at build time. Keep the original downloaded model unchanged.
+The avatar model is copied to `frontend/public/avatar/business-female-04.vrm` (a
+VRM 0.x / glTF 2.0 binary, MIT licensed) and bundled into `dist/avatar/`. Its
+rig, viseme morphs and expression morphs are read from the asset at runtime.
+To use a different asset, set `VITE_AVATAR_MODEL_URL` at build time. Keep the
+original downloaded model unchanged.
 
 **Not verified:** Windows hardware, Windows Piper/faster-whisper binaries and
 cross-device LAN behaviour were not tested here (no Windows PC available). The

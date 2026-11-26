@@ -61,10 +61,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   kioskToken: process.env.HOLOBOX_KIOSK_TOKEN || localDevKioskToken(),
   courseId: process.env.HOLOBOX_KIOSK_COURSE || '',
   personDetectionEnabled: process.env.HOLOBOX_PERSON_DETECTION_ENABLED !== 'false',
-  personDetectionConfidence: Number(process.env.HOLOBOX_PERSON_CONFIDENCE || 0.6),
-  personDetectionIntervalMs: Number(process.env.HOLOBOX_PERSON_INTERVAL_MS || 1000),
-  personPresenceMs: Number(process.env.HOLOBOX_PERSON_PRESENCE_MS || 2000),
-  personAbsenceMs: Number(process.env.HOLOBOX_PERSON_ABSENCE_MS || 5000),
+  personDetectionConfidence: Number(process.env.HOLOBOX_PERSON_CONFIDENCE || 0.5),
+  personDetectionIntervalMs: Number(process.env.HOLOBOX_PERSON_INTERVAL_MS || 600),
+  personPresenceMs: Number(process.env.HOLOBOX_PERSON_PRESENCE_MS || 1200),
+  personAbsenceMs: Number(process.env.HOLOBOX_PERSON_ABSENCE_MS || 3000),
   greetingText: process.env.HOLOBOX_GREETING_TEXT || 'Hi, how can I help you today?',
 };
 

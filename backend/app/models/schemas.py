@@ -17,6 +17,24 @@ class GenerationMode(str, Enum):
     UNAVAILABLE = "unavailable"
 
 
+class AnswerSource(str, Enum):
+    """Where the assistant's answer came from."""
+
+    DOCUMENTS = "documents"
+    GENERAL_KNOWLEDGE = "general_knowledge"
+    MIXED = "mixed"
+    UNKNOWN = "unknown"
+
+
+class DocumentSupport(str, Enum):
+    """Whether retrieved course material actually supported the answer."""
+
+    FULL = "full"
+    PARTIAL = "partial"
+    NONE = "none"
+    UNCERTAIN = "uncertain"
+
+
 class DocumentStatus(str, Enum):
     PROCESSING = "processing"
     READY = "ready"
@@ -129,6 +147,10 @@ class QueryResponse(BaseModel):
     conversation_id: str | None = None
     retrieved_context_available: bool
     warning: str | None = None
+    # Defaults keep older clients working while exposing source attribution.
+    answer_source: AnswerSource = AnswerSource.GENERAL_KNOWLEDGE
+    document_support: DocumentSupport = DocumentSupport.NONE
+    uncertain: bool = False
 
 
 class TranscriptionResponse(BaseModel):

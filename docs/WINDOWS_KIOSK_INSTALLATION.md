@@ -132,9 +132,9 @@ For advanced launches from a terminal (not required for the installed shortcut):
 | `HOLOBOX_KIOSK_TOKEN` | Override the kiosk credential |
 | `HOLOBOX_KIOSK_FULLSCREEN=false` | Windowed mode for debugging |
 | `HOLOBOX_PERSON_DETECTION_ENABLED=false` | Disable camera greeting |
-| `HOLOBOX_PERSON_CONFIDENCE` | Detection threshold (default 0.6) |
-| `HOLOBOX_PERSON_PRESENCE_MS` | Presence confirmation (default 2000) |
-| `HOLOBOX_PERSON_ABSENCE_MS` | Absence confirmation (default 5000) |
+| `HOLOBOX_PERSON_CONFIDENCE` | Detection threshold (default 0.5) |
+| `HOLOBOX_PERSON_PRESENCE_MS` | Presence confirmation (default 1200) |
+| `HOLOBOX_PERSON_ABSENCE_MS` | Absence confirmation (default 3000) |
 | `HOLOBOX_GREETING_TEXT` | Greeting sentence |
 
 ## Troubleshooting

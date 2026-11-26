@@ -20,13 +20,15 @@ def _query(client, question="What is covered?", user="alice", **extra):
     return client.post("/api/v1/query", json=body, headers={"X-User-Id": user})
 
 
-def test_query_without_documents_is_honest(client):
-    response = _query(client)
+def test_query_without_documents_uses_general_knowledge(client):
+    response = _query(client, "What is the capital of France?")
     assert response.status_code == 200
     body = response.json()
-    assert "don't have enough information" in body["answer"]
     assert body["retrieved_context_available"] is False
+    assert body["answer_source"] == "general_knowledge"
+    assert body["document_support"] == "none"
     assert body["sources"] == []
+    assert "source:" not in body["answer"]
 
 
 def test_query_end_to_end_with_citations(client):
@@ -39,6 +41,8 @@ def test_query_end_to_end_with_citations(client):
     assert body["sources"][0]["document_id"] == document["id"]
     assert body["sources"][0]["document_name"] == "notes.txt"
     assert "excerpt" in body["sources"][0]
+    assert body["answer_source"] == "documents"
+    assert body["document_support"] == "full"
 
 
 def test_query_validation_and_course_validation(client):

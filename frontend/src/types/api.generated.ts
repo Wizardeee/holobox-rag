@@ -266,6 +266,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AnswerSource
+         * @description Where the assistant's answer came from.
+         * @enum {string}
+         */
+        AnswerSource: "documents" | "general_knowledge" | "mixed" | "unknown";
         /** Body_replace_document_api_v1_documents__document_id__replace_post */
         Body_replace_document_api_v1_documents__document_id__replace_post: {
             /**
@@ -462,6 +468,12 @@ export interface components {
          * @enum {string}
          */
         DocumentStatus: "processing" | "ready" | "failed";
+        /**
+         * DocumentSupport
+         * @description Whether retrieved course material actually supported the answer.
+         * @enum {string}
+         */
+        DocumentSupport: "full" | "partial" | "none" | "uncertain";
         /** DocumentUpdate */
         DocumentUpdate: {
             /** Approved */
@@ -570,6 +582,15 @@ export interface components {
             retrieved_context_available: boolean;
             /** Warning */
             warning?: string | null;
+            /** @default general_knowledge */
+            answer_source: components["schemas"]["AnswerSource"];
+            /** @default none */
+            document_support: components["schemas"]["DocumentSupport"];
+            /**
+             * Uncertain
+             * @default false
+             */
+            uncertain: boolean;
         };
         /**
          * Role

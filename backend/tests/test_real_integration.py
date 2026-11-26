@@ -49,7 +49,9 @@ def test_typed_question_end_to_end_with_real_components(tmp_path, monkeypatch):
             headers={"X-User-Id": "alice"},
         ).json()
         assert unrelated["retrieved_context_available"] is False
-        assert "don't have enough information" in unrelated["answer"]
+        assert unrelated["answer_source"] == "general_knowledge"
+        assert unrelated["document_support"] == "none"
+        assert unrelated["sources"] == []
 
         deleted = client.delete(
             f"/api/v1/documents/{uploaded.json()['id']}",

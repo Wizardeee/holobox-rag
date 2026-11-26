@@ -1,21 +1,41 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../services/api';
 import type { AvatarState } from '../avatar/AvatarController';
-import type { SourceReference } from '../types/api';
+import type { QueryResponse, SourceReference } from '../types/api';
+import { nextUserTranscript } from '../kiosk/transcript';
 
 export interface KioskTurn {
   question: string;
   answer: string;
   sources: SourceReference[];
+  response: QueryResponse;
+}
+
+/** Source labels are metadata only — the assistant's words are never rendered. */
+export function sourceNote(turn: KioskTurn | null): string {
+  if (!turn) return '';
+  if (turn.response.uncertain) return 'The assistant was not certain about this answer';
+  switch (turn.response.answer_source) {
+    case 'documents': return 'Based on your course material';
+    case 'mixed': return 'Course material with additional explanation';
+    case 'general_knowledge': return 'General knowledge';
+    case 'unknown': return 'The assistant was not certain about this answer';
+    default: return turn.response.document_support === 'none' ? 'General knowledge' : '';
+  }
 }
 
 /** Owns the single audio element and drives avatar state from real events. */
 export function useKioskConversation(courseId: string | null, language?: string) {
   const [state, setState] = useState<AvatarState>('idle');
   const [isGreeting, setGreeting] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const [turn, setTurn] = useState<KioskTurn | null>(null);
+  // Speech captured from the student's microphone. This is the only text the
+  // kiosk is allowed to display as a question.
+  const [userTranscript, setUserTranscript] = useState('');
+  // Internal only: the generated answer, citations and source metadata. Never
+  // rendered in the student-facing transcript area.
+  const [assistantResponse, setAssistantResponse] = useState<KioskTurn | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
 
   const stateRef = useRef<AvatarState>('idle');
@@ -85,11 +105,12 @@ export function useKioskConversation(courseId: string | null, language?: string)
   }, [setKioskState, stopAudio]);
 
   const ask = useCallback(async (question: string): Promise<KioskTurn | null> => {
-    const clean = question.trim();
+    const clean = question.replace(/\s+/g, ' ').trim();
     if (!clean || !courseId) return null;
     setKioskState('processing');
     setError(null);
-    setTranscript(clean);
+    setPlaybackError(null);
+    setUserTranscript((current) => nextUserTranscript(current, clean));
     try {
       const response = await api.query({
         question: clean,
@@ -97,11 +118,25 @@ export function useKioskConversation(courseId: string | null, language?: string)
         course_id: courseId,
         include_sources: true,
       });
-      const answer: KioskTurn = { question: clean, answer: response.answer, sources: response.sources };
-      setTurn(answer);
-      const bytes = await api.synthesize({ text: response.answer });
-      await playAudio(bytes, false);
-      return answer;
+      const turn: KioskTurn = {
+        question: clean,
+        answer: response.answer,
+        sources: response.sources,
+        response,
+      };
+      setAssistantResponse(turn);
+      // TTS is optional: a synthesis or playback failure must not turn a
+      // successful text answer into an AI error.
+      try {
+        const bytes = await api.synthesize({ text: response.answer });
+        const played = await playAudio(bytes, false);
+        if (!played) throw new Error('playback failed');
+      } catch {
+        setError(null);
+        setPlaybackError('Audio unavailable — the answer is shown below.');
+        setKioskState('idle');
+      }
+      return turn;
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
       setKioskState('error');
@@ -116,7 +151,8 @@ export function useKioskConversation(courseId: string | null, language?: string)
     greetingInFlight.current = true;
     try {
       setError(null);
-      setTurn(null);
+      setPlaybackError(null);
+      setAssistantResponse(null);
       setGreeting(true);
       const bytes = greetingBytes.current ?? await api.synthesize({ text });
       greetingBytes.current = bytes; // backend also caches by text; this avoids repeat calls
@@ -133,7 +169,9 @@ export function useKioskConversation(courseId: string | null, language?: string)
 
   const startListening = useCallback(async () => {
     setError(null);
-    setTurn(null);
+    setPlaybackError(null);
+    setAssistantResponse(null);
+    setUserTranscript('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
@@ -167,13 +205,14 @@ export function useKioskConversation(courseId: string | null, language?: string)
     }
   }, [ask, language, setKioskState]);
 
-  // Course switches must not retain the previous course's transcript, answer
+  // Course switches must not retain the previous course's question, answer
   // or citations. Stop any in-flight playback as part of the transition.
   useEffect(() => {
     stopAudio();
-    setTranscript('');
-    setTurn(null);
+    setUserTranscript('');
+    setAssistantResponse(null);
     setError(null);
+    setPlaybackError(null);
     setGreeting(false);
     setKioskState('idle');
   }, [courseId, setKioskState, stopAudio]);
@@ -191,6 +230,7 @@ export function useKioskConversation(courseId: string | null, language?: string)
 
   const retry = useCallback(() => {
     setError(null);
+    setPlaybackError(null);
     setKioskState('idle');
   }, [setKioskState]);
 
@@ -201,7 +241,22 @@ export function useKioskConversation(courseId: string | null, language?: string)
   }, [stopAudio]);
 
   return {
-    state, isGreeting, transcript, turn, error, analyser,
-    startListening, stopListening, stopSpeaking, retry, ask, greet,
+    state,
+    isListening: state === 'listening',
+    isProcessing: state === 'processing',
+    isSpeaking: state === 'speaking',
+    isGreeting,
+    userTranscript,
+    assistantResponse,
+    note: sourceNote(assistantResponse),
+    error,
+    playbackError,
+    analyser,
+    startListening,
+    stopListening,
+    stopSpeaking,
+    retry,
+    ask,
+    greet,
   };
 }

@@ -4,6 +4,7 @@ import { useKioskConversation } from '../hooks/useKioskConversation';
 import { usePersonDetection } from '../hooks/usePersonDetection';
 import { useSettings } from '../hooks/useSettings';
 import { api, errorMessage } from '../services/api';
+import { studentQuestionCaption } from './transcript';
 import type { CourseInfo } from '../types/api';
 import './kiosk.css';
 
@@ -115,6 +116,10 @@ export function KioskApp() {
   }
 
   const courseName = courses.find((item) => item.id === courseId)?.name ?? 'No course selected';
+  const questionCaption = studentQuestionCaption({
+    userTranscript: conversation.userTranscript,
+    assistantResponse: conversation.assistantResponse?.answer ?? '',
+  });
   const statusText = online === false
     ? 'Backend unavailable — check the network connection'
     : conversation.state === 'idle' && coursesLoading
@@ -156,13 +161,20 @@ export function KioskApp() {
 
       {conversation.state === 'listening' && <div className="kiosk-pulse" aria-hidden="true" />}
 
+      <div className="kiosk-bottom">
+      {/* Only the student's own words are shown. The generated answer is played
+          as audio and kept in state for logging, never rendered as a caption. */}
       <div className="kiosk-caption" aria-live="polite">
-        {conversation.transcript && <p className="kiosk-question">“{conversation.transcript}”</p>}
-        {conversation.turn && <p className="kiosk-answer">{conversation.turn.answer}</p>}
-        {conversation.turn && conversation.turn.sources.length > 0 && (
-          <p className="kiosk-sources">Sources: {conversation.turn.sources.map((s) => s.document_name).join(', ')}</p>
+        {questionCaption && <p className="kiosk-question">“{questionCaption}”</p>}
+        {conversation.assistantResponse && (
+          <div className="kiosk-answer-card">
+            <span className="kiosk-answer-label">Answer</span>
+            <p className="kiosk-answer">{conversation.assistantResponse.answer}</p>
+            {conversation.note && <p className="kiosk-source-note">{conversation.note}</p>}
+          </div>
         )}
       </div>
+      {conversation.playbackError && <p className="kiosk-playback-note">{conversation.playbackError}</p>}
 
       {(loadError || conversation.error) && (
         <div className="kiosk-error">
@@ -190,6 +202,7 @@ export function KioskApp() {
           <span className="kiosk-camera-note">Camera greeting unavailable — you can still ask questions.</span>
         )}
       </footer>
+      </div>
     </div>
   );
 }

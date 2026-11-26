@@ -76,15 +76,16 @@ Set in Electron main via environment variables (or edit the local
 | Setting | Env var | Default |
 |---|---|---|
 | Enabled | `HOLOBOX_PERSON_DETECTION_ENABLED` | `true` |
-| Confidence | `HOLOBOX_PERSON_CONFIDENCE` | `0.6` |
-| Detection interval | `HOLOBOX_PERSON_INTERVAL_MS` | `1000` |
-| Presence confirmation | `HOLOBOX_PERSON_PRESENCE_MS` | `2000` |
-| Absence confirmation | `HOLOBOX_PERSON_ABSENCE_MS` | `5000` |
+| Confidence | `HOLOBOX_PERSON_CONFIDENCE` | `0.5` |
+| Detection interval | `HOLOBOX_PERSON_INTERVAL_MS` | `600` (halved while someone is arriving/present) |
+| Presence confirmation | `HOLOBOX_PERSON_PRESENCE_MS` | `1200` |
+| Absence confirmation | `HOLOBOX_PERSON_ABSENCE_MS` | `3000` |
 | Greeting text | `HOLOBOX_GREETING_TEXT` | `Hi, how can I help you today?` |
 
-Disabling via env means no camera permission is requested at all. A camera
-failure is terminal for this module: it never re-prompts or shows repeated
-errors. When unavailable, a small non-technical note appears in the kiosk footer:
+Disabling via env means no camera permission is requested at all. A denied
+permission is terminal (no repeated prompts); a disconnected camera or model
+error is retried a bounded number of times with backoff. When unavailable, a
+small non-technical note appears in the kiosk footer:
 "Camera greeting unavailable — you can still ask questions."
 
 ## Windows mini PC testing (before the installer)
