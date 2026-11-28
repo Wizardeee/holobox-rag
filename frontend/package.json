@@ -1,13 +1,13 @@
 {
   "name": "holobox-kiosk",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Holobox student kiosk — local frontend for the Holobox RAG backend",
   "author": "Holobox Project",
   "private": true,
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "dev:teacher": "vite --port 5174",
+    "dev:teacher": "vite --mode teacher --port 5174 --open /teacher.html",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
     "electron:build": "tsc -p tsconfig.electron.json",
     "electron": "electron dist-electron/main.js",
