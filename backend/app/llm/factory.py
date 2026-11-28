@@ -18,6 +18,7 @@ def get_llm_provider(settings: Settings) -> LLMProvider:
             api_key=settings.llm_api_key,
             model=settings.llm_model,
             timeout=settings.llm_timeout_seconds,
+            context_tokens=settings.llm_context_tokens,
         )
     if provider_id == "college":
         return CollegeProvider()

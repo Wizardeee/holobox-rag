@@ -159,6 +159,35 @@ class TranscriptionResponse(BaseModel):
     duration_seconds: float | None = None
 
 
+class PresenceEvent(BaseModel):
+    present: bool
+    session_id: str | None = None
+    course_id: str | None = Field(default=None, max_length=64)
+
+
+class PresenceDecision(BaseModel):
+    """Backend decision only; no answer is generated from presence alone."""
+
+    listen: bool
+    session_id: str | None = None
+    listen_ms: int
+    reason: str
+
+
+class VoiceCaptureResponse(BaseModel):
+    session_id: str
+    status: str  # answered | no_speech | error
+    text: str = ""
+    answer: str = ""
+    sources: list[SourceReference] = Field(default_factory=list)
+    answer_source: AnswerSource = AnswerSource.GENERAL_KNOWLEDGE
+    document_support: DocumentSupport = DocumentSupport.NONE
+    uncertain: bool = False
+    generation_mode: GenerationMode = GenerationMode.UNAVAILABLE
+    warning: str | None = None
+    audio_base64: str | None = None
+
+
 class SynthesisRequest(BaseModel):
     text: str = Field(min_length=1, max_length=8000)
     voice: str | None = None

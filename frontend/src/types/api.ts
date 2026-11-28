@@ -6,6 +6,29 @@ export type Scope = components['schemas']['Scope'];
 export type SourceReference = components['schemas']['SourceReference'];
 export type QueryRequest = components['schemas']['QueryRequest'];
 export type QueryResponse = components['schemas']['QueryResponse'];
+
+/** New local voice endpoints are defined in backend/app/models/schemas.py. */
+export interface PresenceDecision {
+  listen: boolean;
+  session_id: string | null;
+  listen_ms: number;
+  reason: string;
+}
+
+export interface VoiceCaptureResponse {
+  session_id: string;
+  status: string;
+  text: string;
+  answer: string;
+  sources: SourceReference[];
+  answer_source?: string | null;
+  document_support?: string | null;
+  uncertain?: boolean;
+  generation_mode?: string;
+  warning?: string | null;
+  audio_base64?: string | null;
+}
+
 export type AnswerSource = components['schemas']['AnswerSource'];
 export type DocumentSupport = components['schemas']['DocumentSupport'];
 export type TranscriptionResponse = components['schemas']['TranscriptionResponse'];

@@ -55,17 +55,38 @@ class Settings(BaseSettings):
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     chroma_collection: str = "holobox_chunks"
 
-    llm_provider: str = "mock"
-    llm_base_url: str | None = None
+    llm_provider: str = "http"
+    llm_base_url: str | None = "http://127.0.0.1:11434/v1"
     llm_api_key: str | None = None
-    llm_model: str | None = None
-    llm_timeout_seconds: float = Field(default=30.0, gt=0)
+    llm_model: str | None = "qwen3:14b"
+    llm_timeout_seconds: float = Field(default=120.0, gt=0)
+    llm_context_tokens: int = Field(default=8192, ge=512, le=131072)
+    # None = derive from the model (Qwen3 gets /no_think, others do not).
+    llm_no_think: bool | None = None
+    # Spoken answers stay in this language unless the user explicitly asks otherwise.
+    response_language: str = "English"
 
     stt_model: str = "base"
     stt_device: str = "cpu"
     stt_language: str | None = None
     piper_binary: str | None = None
     piper_voice: str | None = None
+
+    # Camera-triggered voice sessions. The kiosk owns the microphone; the backend
+    # coordinates presence, the listening window and the resulting answer flow.
+    voice_listen_seconds: float = Field(default=5.0, gt=0, le=30)
+    voice_presence_debounce_seconds: float = Field(default=1.0, ge=0, le=30)
+    voice_presence_cooldown_seconds: float = Field(default=15.0, ge=0, le=600)
+
+    @property
+    def no_think_enabled(self) -> bool:
+        if self.llm_no_think is not None:
+            return self.llm_no_think
+        return (self.llm_model or "").lower().startswith("qwen3")
+
+    @property
+    def listen_window_ms(self) -> int:
+        return int(self.voice_listen_seconds * 1000)
 
     @property
     def cors_origins_list(self) -> list[str]:

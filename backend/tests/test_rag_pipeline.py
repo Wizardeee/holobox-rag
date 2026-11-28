@@ -23,11 +23,11 @@ class StubRetriever:
         return self.hits
 
 
-def _pipeline(tmp_path, provider, hits, retrieval_error=None):
+def _pipeline(tmp_path, provider, hits, retrieval_error=None, **settings_overrides):
     repository = Repository(tmp_path / "db.sqlite")
     repository.init()
     retriever = StubRetriever(hits, error=retrieval_error)
-    settings = Settings(data_dir=tmp_path / "data")
+    settings = Settings(data_dir=tmp_path / "data", **settings_overrides)
     return RAGPipeline(retriever, provider, repository, settings), repository, retriever
 
 
@@ -171,6 +171,22 @@ def test_metadata_only_response_is_not_reported_as_success(tmp_path):
     assert response.warning == "empty_llm_response"
     assert response.answer
     assert response.uncertain is True
+
+
+def test_prompt_uses_configured_language_and_recent_history(tmp_path):
+    hits = [SearchHit("c1", "d1", "course.pdf", 1, "CUDA is a platform.", 0.9)]
+    provider = FakeLLMProvider(response="CUDA es una plataforma [1].")
+    pipeline, repository, _ = _pipeline(
+        tmp_path, provider, hits, response_language="Spanish", llm_model="qwen3:14b"
+    )
+    repository.create_conversation("conv1", "alice", "previous")
+    repository.add_message("conv1", "m1", "user", "Hi", [])
+    repository.add_message("conv1", "m2", "assistant", "Hello", [])
+    pipeline.run(QueryRequest(question="What is CUDA?", conversation_id="conv1", owner_id="alice"))
+    prompt = provider.calls[0]
+    assert prompt.startswith("/no_think ")
+    assert "Reply in Spanish" in prompt
+    assert "Conversation so far" in prompt and "Hello" in prompt
 
 
 def test_kiosk_filters_course_and_approval(tmp_path):

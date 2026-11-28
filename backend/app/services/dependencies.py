@@ -6,6 +6,7 @@ from app.core.config import Settings, get_settings
 from app.ingestion.ingestor import Ingestor
 from app.rag.pipeline import RAGPipeline
 from app.services.repository import Repository
+from app.services.voice_sessions import VoiceSessionCoordinator
 from app.speech_to_text.base import STTProvider
 from app.text_to_speech.base import TTSService
 from app.vector_db.base import VectorStore
@@ -37,3 +38,7 @@ def get_stt_provider(request: Request) -> STTProvider:
 
 def get_tts_service(request: Request) -> TTSService:
     return request.app.state.tts_service
+
+
+def get_voice_sessions(request: Request) -> VoiceSessionCoordinator:
+    return request.app.state.voice_sessions

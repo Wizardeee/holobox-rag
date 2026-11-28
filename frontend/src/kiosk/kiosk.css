@@ -22,15 +22,23 @@ button, select { font: inherit; }
 .kiosk-course select { background: #ffffff; color: #16233a; border: 1px solid #c8d3e0; border-radius: 8px; padding: 8px 12px; min-width: 250px; }
 .kiosk-refresh { background: #ffffff; color: #1d4f9c; border: 1px solid #c8d3e0; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 12px; }
 .kiosk-refresh:disabled { opacity: .5; cursor: not-allowed; }
+.kiosk-voice-slot { margin-left: auto; display: flex; align-items: center; }
 .kiosk-status { margin-left: auto; border-radius: 30px; padding: 8px 18px; font-size: 13px; background: #f4f7fb; border: 1px solid #d7e0ea; color: #34455e; }
+.kiosk-status-inline { margin-left: 0; font-size: 12px; padding: 6px 14px; }
 .status-listening { color: #1c7a55; border-color: #7fc9a6; background: #eef9f3; }
 .status-processing { color: #8a6100; border-color: #e0c47c; background: #fff9e9; }
 .status-speaking { color: #1d4f9c; border-color: #9dbcea; background: #f0f5fd; }
 .status-error, .status-offline { color: #a3312a; border-color: #e5aaa5; background: #fff1f0; }
 .kiosk-pulse { position: absolute; left: 50%; top: 50%; width: 420px; height: 420px; margin: -210px 0 0 -210px; border: 2px solid #2aa57988; border-radius: 50%; animation: pulse 1.4s ease-out infinite; pointer-events: none; }
 @keyframes pulse { 0% { transform: scale(.72); opacity: .9; } 100% { transform: scale(1.18); opacity: 0; } }
-.kiosk-bottom { position: absolute; left: 0; right: 0; bottom: 0; height: var(--bottom-ui); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 8px; padding: 8px clamp(16px, 3vw, 40px) 18px; background: #ffffff; }
-.kiosk-caption { width: 100%; text-align: center; color: #16233a; max-height: 46%; overflow: hidden; }
+.kiosk-bottom { position: absolute; left: 0; right: 0; bottom: 0; height: var(--bottom-ui); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; padding: 8px clamp(16px, 3vw, 40px) 12px; background: #ffffff; }
+/* The caption expands into the reserved bottom zone instead of being clipped
+   at 46% height. Long answers scroll inside the panel. */
+.kiosk-caption {
+  width: 100%; text-align: center; color: #16233a;
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
 .kiosk-question { font-size: 21px; line-height: 1.45; margin: 0 auto; max-width: 900px; font-weight: 600; }
 .kiosk-source-note { font-size: 12px; letter-spacing: .02em; color: #5b6b80; margin: 10px 0 0; }
 .kiosk-answer-card { margin: 12px auto 0; max-width: 760px; background: #ffffff; border: 1px solid #d7e0ea; border-radius: 12px; padding: 10px 16px; box-shadow: 0 6px 20px #16233a12; }
@@ -38,9 +46,9 @@ button, select { font: inherit; }
 .kiosk-answer { font-size: 16px; line-height: 1.45; margin: 4px 0 0; max-width: 900px; }
 .kiosk-playback-note { margin: 0; text-align: center; font-size: 12px; color: #8a6100; }
 .kiosk-sources { font-size: 12px; color: #5b6b80; margin-top: 10px; }
-.kiosk-error { background: #fff1f0; border: 1px solid #e5aaa5; color: #8c2b25; padding: 10px 16px; border-radius: 10px; display: flex; gap: 14px; align-items: center; font-size: 13px; }
+.kiosk-error { flex: 0 0 auto; background: #fff1f0; border: 1px solid #e5aaa5; color: #8c2b25; padding: 6px 12px; border-radius: 10px; display: flex; gap: 14px; align-items: center; font-size: 12px; }
 .kiosk-error button { border: 1px solid #d98a83; border-radius: 6px; padding: 6px 12px; cursor: pointer; background: #ffffff; color: #8c2b25; }
-.kiosk-controls { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.kiosk-controls { display: flex; flex: 0 0 auto; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; }
 .kiosk-mic, .kiosk-stop { border: 1px solid #1d4f9c; background: #ffffff; color: #1d4f9c; border-radius: 40px; padding: 14px 34px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; }
 .kiosk-stop { background: #fff1f0; border-color: #c0655d; color: #8c2b25; }
 .kiosk-mic:disabled { opacity: .45; cursor: not-allowed; }

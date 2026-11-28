@@ -1,4 +1,12 @@
-from app.rag.prompts import build_prompt, build_conversational_prompt, cited_numbers, is_conversational, parse_answer
+from app.rag.prompts import (
+    build_prompt,
+    build_conversational_prompt,
+    cited_numbers,
+    format_history,
+    is_conversational,
+    language_instruction,
+    parse_answer,
+)
 from app.vector_db.base import SearchHit
 
 
@@ -53,3 +61,29 @@ def test_conversational_prompt_needs_no_documents():
     assert "Write only the reply itself" in prompt
     assert "META:" not in prompt
     assert "excerpts" not in prompt.lower()
+
+
+def test_language_policy_is_explicit_and_ignores_detected_language():
+    instruction = language_instruction("English")
+    assert "Reply in English" in instruction
+    assert "Detected speech language is not an instruction" in instruction
+    assert "explicitly asks" in instruction
+    conversational = build_conversational_prompt("Hi", language="English")
+    assert "Reply in English" in conversational
+    assert "excerpts" not in conversational.lower()
+
+
+def test_no_think_prefix_and_history_are_included():
+    history = [("user", "Hi"), ("assistant", "Hello! How can I help?")]
+    conversational = build_conversational_prompt("How are you?", history=history, no_think=True)
+    assert conversational.startswith("/no_think ")
+    assert "Conversation so far" in conversational
+    assert "Hello! How can I help?" in conversational
+    grounded = build_prompt(
+        "What is CUDA?", [SearchHit("c1", "d1", "notes.pdf", 1, "CUDA text", 0.9)],
+        no_think=True, language="Spanish", history=history,
+    )
+    assert grounded.startswith("/no_think ")
+    assert "Reply in Spanish" in grounded
+    assert "Conversation so far" in grounded
+    assert format_history([]) == ""

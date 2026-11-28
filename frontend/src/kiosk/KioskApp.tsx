@@ -34,14 +34,25 @@ export function KioskApp() {
     if (settings?.courseId && !preferredCourse.current) preferredCourse.current = settings.courseId;
   }, [settings?.courseId]);
 
-  const handleGreet = useCallback(() => {
-    if (!settings) return;
-    void conversation.greet(settings.greetingText);
-  }, [conversation.greet, settings]);
+  const presenceInFlight = useRef(false);
+  const startAutomaticSession = conversation.startAutomaticSession;
+  const handlePresence = useCallback(async (present: boolean) => {
+    if (!settings?.backendUrlConfigured || presenceInFlight.current) return;
+    presenceInFlight.current = true;
+    try {
+      const decision = await api.presence({ present, course_id: courseId ?? undefined });
+      if (!decision.listen || !decision.session_id) return;
+      await startAutomaticSession(decision.session_id, decision.listen_ms);
+    } catch {
+      // Camera failures are non-fatal; the manual microphone still works.
+    } finally {
+      presenceInFlight.current = false;
+    }
+  }, [courseId, settings?.backendUrlConfigured, startAutomaticSession]);
   const { cameraStatus } = usePersonDetection(
     settings,
     conversation.state !== 'idle',
-    handleGreet,
+    handlePresence,
   );
 
   const loadCourses = useCallback(async () => {
@@ -156,7 +167,22 @@ export function KioskApp() {
         <button className="kiosk-refresh" onClick={() => void loadCourses()} disabled={coursesLoading}>
           {coursesLoading ? 'Refreshing…' : 'Refresh courses'}
         </button>
-        <span className={`kiosk-status status-${online === false ? 'offline' : conversation.state}`}>{statusText}</span>
+        {/* Voice control occupies the former status position at the top-right. */}
+        <div className="kiosk-voice-slot">
+          {conversation.state === 'speaking' ? (
+            <button className="kiosk-stop" onClick={conversation.stopSpeaking}>Stop answer</button>
+          ) : conversation.state === 'listening' ? (
+            <span className="kiosk-status status-listening">Listening…</span>
+          ) : (
+            <button
+              className="kiosk-mic"
+              onClick={() => void conversation.startListening()}
+              disabled={!courseId || online === false || conversation.state === 'processing'}
+            >
+              <span className="mic-dot" /> Ask a question
+            </button>
+          )}
+        </div>
       </header>
 
       {conversation.state === 'listening' && <div className="kiosk-pulse" aria-hidden="true" />}
@@ -184,22 +210,12 @@ export function KioskApp() {
       )}
 
       <footer className="kiosk-controls">
-        {conversation.state === 'speaking' ? (
-          <button className="kiosk-stop" onClick={conversation.stopSpeaking}>Stop answer</button>
-        ) : conversation.state === 'listening' ? (
-          <button className="kiosk-stop" onClick={conversation.stopListening}>Stop listening</button>
-        ) : (
-          <button
-            className="kiosk-mic"
-            onClick={() => void conversation.startListening()}
-            disabled={!courseId || online === false || conversation.state === 'processing'}
-          >
-            <span className="mic-dot" /> Ask a question
-          </button>
-        )}
+        <span className={`kiosk-status kiosk-status-inline status-${online === false ? 'offline' : conversation.state}`}>
+          {statusText}
+        </span>
         <span className="kiosk-current-course">Current course: <strong>{courseName}</strong></span>
         {(cameraStatus === 'denied' || cameraStatus === 'unavailable') && settings.personDetectionEnabled && (
-          <span className="kiosk-camera-note">Camera greeting unavailable — you can still ask questions.</span>
+          <span className="kiosk-camera-note">Camera listening unavailable — you can still ask questions.</span>
         )}
       </footer>
       </div>

@@ -12,7 +12,9 @@ import type {
   HealthResponse,
   LoginRequest,
   LoginResponse,
+  PresenceDecision,
   PrincipalInfo,
+  VoiceCaptureResponse,
   QueryRequest,
   QueryResponse,
   Scope,
@@ -22,6 +24,7 @@ import type {
   TranscriptionResponse,
 } from '../types/api';
 import { httpRequest } from './transport';
+import { captureRequest, presenceRequest } from './voiceApi';
 
 async function request<T>(path: string, options: Record<string, unknown> = {}): Promise<T> {
   const result: ApiResult<T> = await httpRequest<T>(path, options);
@@ -83,6 +86,11 @@ export const api = {
       form: { audio, language: language || undefined },
     }),
   synthesize: (body: SynthesisRequest) => request<number[]>('/api/v1/synthesize', { method: 'POST', body }),
+
+  presence: (body: { present: boolean; course_id?: string }) =>
+    request<PresenceDecision>('/api/v1/voice/presence', presenceRequest(body)),
+  captureVoice: (sessionId: string, audio: FilePart, courseId: string | null, language?: string) =>
+    request<VoiceCaptureResponse>('/api/v1/voice/capture', captureRequest(sessionId, audio, courseId, language)),
 
   listConversations: () => request<Conversation[]>('/api/v1/conversations'),
   getConversation: (id: string) => request<Conversation>(`/api/v1/conversations/${encodeURIComponent(id)}`),

@@ -41,6 +41,7 @@ def test_http_provider_generates_from_configured_endpoint(monkeypatch):
     assert seen["url"] == "http://llm.local/v1/chat/completions"
     assert seen["payload"]["messages"][0]["content"] == "explain clouds"
     assert seen["payload"]["model"] == "my-model"
+    assert seen["payload"]["options"]["num_ctx"] == 8192
 
 
 def test_http_provider_failure_is_unavailable(monkeypatch):
@@ -95,6 +96,13 @@ def test_unreachable_provider_never_falls_back_to_mock():
     assert provider.id != "mock"
     assert response.mode == GenerationMode.UNAVAILABLE
     assert response.warning.startswith("provider_error")
+
+
+def test_factory_passes_configured_context_window():
+    provider = get_llm_provider(
+        Settings(llm_provider="http", llm_base_url="http://llm.local", llm_context_tokens=4096)
+    )
+    assert provider.context_tokens == 4096
 
 
 def test_provider_selection():

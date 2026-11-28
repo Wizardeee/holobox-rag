@@ -82,11 +82,17 @@ class RAGPipeline:
             course = self.repository.get_course(selected_course)
             course_label = course.get("name") if course else selected_course
 
+        history = self._recent_history(request.conversation_id, owner)
+        prompt_options = {
+            "language": self.settings.response_language,
+            "history": history,
+            "no_think": self.settings.no_think_enabled,
+        }
         try:
             prompt = (
-                build_conversational_prompt(request.question)
+                build_conversational_prompt(request.question, **prompt_options)
                 if conversational
-                else build_prompt(request.question, hits, course_label)
+                else build_prompt(request.question, hits, course_label, **prompt_options)
             )
             response: LLMResponse = self.llm_provider.generate(
                 prompt,
@@ -151,6 +157,22 @@ class RAGPipeline:
             document_support=document_support,
             uncertain=uncertain,
         )
+
+    def _recent_history(self, conversation_id: str | None, owner: str) -> list[tuple[str, str]]:
+        """A few prior turns so language and context stay consistent across voice turns."""
+        if not conversation_id:
+            return []
+        try:
+            conversation = self.repository.get_conversation(conversation_id)
+            if conversation is None or conversation["owner_id"] != owner:
+                return []
+            return [
+                (message.role, message.content[:400])
+                for message in conversation["messages"][-4:]
+            ]
+        except Exception as exc:
+            logger.warning("Could not load conversation history: %s", exc)
+            return []
 
     @staticmethod
     def _classify(

@@ -35,15 +35,15 @@ const MAX_CAMERA_ATTEMPTS = 3;
 export function usePersonDetection(
   settings: AppSettings | null,
   isBusy: boolean,
-  onGreet: () => void | Promise<void>,
+  onPresence: (present: boolean) => void | Promise<void>,
 ) {
   const [status, setStatus] = useState<CameraStatus>('disabled');
   const busyRef = useRef(isBusy);
-  const greetRef = useRef(onGreet);
+  const presenceRef = useRef(onPresence);
   const terminalFailure = useRef(false);
 
   useEffect(() => { busyRef.current = isBusy; }, [isBusy]);
-  useEffect(() => { greetRef.current = onGreet; }, [onGreet]);
+  useEffect(() => { presenceRef.current = onPresence; }, [onPresence]);
 
   useEffect(() => {
     if (!settings?.personDetectionEnabled) {
@@ -68,6 +68,7 @@ export function usePersonDetection(
     let attempts = 0;
     let lastTimestamp = 0;
     let lastVideoTime = -1;
+    let lastPresent = false;
 
     const video = document.createElement('video');
     video.muted = true;
@@ -90,6 +91,8 @@ export function usePersonDetection(
       video.srcObject = null;
       try { detector?.close(); } catch { /* cleanup is best-effort */ }
       detector = null;
+      if (lastPresent && !disposed) void presenceRef.current(false);
+      lastPresent = false;
       tracker.reset();
       if (next && !disposed) setStatus(next);
     };
@@ -106,8 +109,8 @@ export function usePersonDetection(
     const tick = () => {
       timer = null;
       if (disposed || !detector) return;
-      // No inference while answering/recording: greetings are suppressed then,
-      // and this keeps the Three.js animation smooth on the mini PC.
+      // No inference while answering/recording: presence events are suppressed
+      // then, and this keeps the Three.js animation smooth on the mini PC.
       if (busyRef.current) {
         schedule();
         return;
@@ -137,7 +140,13 @@ export function usePersonDetection(
           ),
         );
         const state = tracker.update(person, Date.now());
-        if (state.greetingDue) void greetRef.current();
+        if (state.greetingDue && !lastPresent) {
+          lastPresent = true;
+          void presenceRef.current(true);
+        } else if (!state.present && lastPresent) {
+          lastPresent = false;
+          void presenceRef.current(false);
+        }
       } catch {
         // A single dropped frame must never break the kiosk.
       } finally {

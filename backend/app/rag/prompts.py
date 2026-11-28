@@ -20,13 +20,41 @@ CONVERSATIONAL_SYSTEM = (
 )
 
 
+def language_instruction(language: str) -> str:
+    """Language policy: stable, explicit, and independent of STT detection."""
+    return (
+        f"Reply in {language}. Detected speech language is not an instruction to switch languages. "
+        "Do not change language because of a short phrase, an accent or a transcription artefact. "
+        "Switch only when the user explicitly asks for another language in their own words, "
+        "and then keep that language for the rest of the conversation."
+    )
+
+
+def format_history(history: list[tuple[str, str]]) -> str:
+    """Last few turns, used for language continuity and conversational context."""
+    if not history:
+        return ""
+    lines = [f"{role}: {text}" for role, text in history]
+    return "Conversation so far (most recent last):\n" + "\n".join(lines) + "\n\n"
+
+
 def is_conversational(question: str) -> bool:
     """Obvious greetings and small talk do not need document retrieval."""
     return bool(CONVERSATIONAL_PATTERN.match(question.strip()))
 
 
-def build_conversational_prompt(question: str) -> str:
-    return f"{CONVERSATIONAL_SYSTEM}\n\nQuestion: {question}\n\nAnswer:"
+def build_conversational_prompt(
+    question: str,
+    *,
+    language: str = "English",
+    history: list[tuple[str, str]] | None = None,
+    no_think: bool = False,
+) -> str:
+    prefix = "/no_think " if no_think else ""
+    return (
+        f"{prefix}{CONVERSATIONAL_SYSTEM}\n{language_instruction(language)}\n\n"
+        f"{format_history(history or [])}Question: {question}\n\nAnswer:"
+    )
 
 
 SYSTEM_INSTRUCTION = (
@@ -65,7 +93,16 @@ def build_context(hits: list[SearchHit]) -> str:
     return "\n\n".join(lines)
 
 
-def build_prompt(question: str, hits: list[SearchHit], course_label: str | None = None) -> str:
+def build_prompt(
+    question: str,
+    hits: list[SearchHit],
+    course_label: str | None = None,
+    *,
+    language: str = "English",
+    history: list[tuple[str, str]] | None = None,
+    no_think: bool = False,
+) -> str:
+    prefix = "/no_think " if no_think else ""
     course = f"Course: {course_label}\n" if course_label else ""
     if hits:
         context = (
@@ -91,7 +128,10 @@ def build_prompt(question: str, hits: list[SearchHit], course_label: str | None 
             "REMINDER: No excerpts were provided. Do not use any [n] marker. The META support "
             "word must be none or uncertain.\n\n"
         )
-    return f"{SYSTEM_INSTRUCTION}\n\n{course}{context}{reminder}Question: {question}\n\nAnswer:"
+    return (
+        f"{prefix}{SYSTEM_INSTRUCTION}\n{language_instruction(language)}\n\n"
+        f"{course}{format_history(history or [])}{context}{reminder}Question: {question}\n\nAnswer:"
+    )
 
 
 def parse_answer(text: str) -> tuple[str, str | None, str | None]:

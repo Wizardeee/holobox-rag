@@ -21,11 +21,19 @@ class HttpProvider:
     is_configured = True
     supports_streaming = True
 
-    def __init__(self, base_url: str, api_key: str | None, model: str | None, timeout: float) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str | None,
+        model: str | None,
+        timeout: float,
+        context_tokens: int = 8192,
+    ) -> None:
         self.base_url = base_url
         self.api_key = api_key
         self.model = model or "default"
         self.timeout = timeout
+        self.context_tokens = context_tokens
 
     @property
     def endpoint(self) -> str:
@@ -43,6 +51,8 @@ class HttpProvider:
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0,
             "stream": stream,
+            # Ollama's OpenAI-compatible endpoint accepts this unchanged.
+            "options": {"num_ctx": self.context_tokens},
         }
 
     def generate(self, prompt: str, *, timeout: float | None = None) -> LLMResponse:
@@ -54,7 +64,10 @@ class HttpProvider:
             return LLMResponse(text=text, mode=GenerationMode.LIVE)
         except Exception as exc:
             return LLMResponse(
-                text="The configured LLM endpoint could not be reached. Document excerpts are still shown below.",
+                text=(
+                    f"The configured LLM endpoint or model '{self.model}' could not be reached. "
+                    "Check that Ollama is running and the model is downloaded."
+                ),
                 mode=GenerationMode.UNAVAILABLE,
                 warning=f"provider_error: {type(exc).__name__}",
             )

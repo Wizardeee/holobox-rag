@@ -17,6 +17,7 @@ from app.api.auth import router as auth_router
 from app.api.config import router as config_router
 from app.api.conversations import router as conversations_router
 from app.api.courses import router as courses_router
+from app.api.presence import router as presence_router
 from app.api.query import router as query_router
 from app.api.synthesis import router as synthesis_router
 from app.api.voice import router as voice_router
@@ -29,6 +30,7 @@ from app.rag.pipeline import RAGPipeline
 from app.retrieval.retriever import Retriever
 from app.services.indexer import Indexer
 from app.services.repository import Repository
+from app.services.voice_sessions import VoiceSessionCoordinator
 from app.speech_to_text.base import STTProvider
 from app.speech_to_text.factory import get_stt_provider
 from app.text_to_speech.base import TTSService
@@ -79,6 +81,11 @@ async def lifespan(app: FastAPI):
     app.state.pipeline = RAGPipeline(retriever, provider, repository, settings)
     app.state.stt_provider = create_stt_provider(settings)
     app.state.tts_service = create_tts_service(settings)
+    app.state.voice_sessions = VoiceSessionCoordinator(
+        listen_seconds=settings.voice_listen_seconds,
+        debounce_seconds=settings.voice_presence_debounce_seconds,
+        cooldown_seconds=settings.voice_presence_cooldown_seconds,
+    )
     describe = getattr(app.state.tts_service, "describe", None)
     if describe is not None:
         logger.info("TTS diagnostics at startup: %s", describe())
@@ -103,6 +110,7 @@ def create_app() -> FastAPI:
     app.include_router(documents_router)
     app.include_router(query_router)
     app.include_router(voice_router)
+    app.include_router(presence_router)
     app.include_router(synthesis_router)
     app.include_router(config_router)
     app.include_router(conversations_router)
