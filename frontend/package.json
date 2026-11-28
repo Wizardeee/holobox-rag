@@ -1,6 +1,6 @@
 {
   "name": "holobox-kiosk",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Holobox student kiosk — local frontend for the Holobox RAG backend",
   "author": "Holobox Project",
   "private": true,
@@ -13,7 +13,7 @@
     "electron": "electron dist-electron/main.js",
     "dist": "npm run build && npm run electron:build && electron-builder",
     "dist:win": "npm run build && npm run electron:build && electron-builder --win --x64 -p never",
-    "test": "node --test src/kiosk/transcript.test.ts src/avatar/vrmAvatar.test.ts src/avatar/vrmLoad.test.ts src/avatar/framing.test.ts src/detection/presenceTracker.test.ts src/audio/voiceSession.test.ts src/services/api.voice.test.ts",
+    "test": "node --test src/kiosk/transcript.test.ts src/avatar/vrmAvatar.test.ts src/avatar/vrmLoad.test.ts src/avatar/framing.test.ts src/detection/presenceTracker.test.ts src/audio/voiceSession.test.ts src/services/api.voice.test.ts src/kiosk/courseSelection.test.ts",
     "generate:api-types": "node scripts/generate-api-types.mjs",
     "check:api-types": "node scripts/generate-api-types.mjs --check"
   },

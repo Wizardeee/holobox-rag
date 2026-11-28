@@ -69,14 +69,15 @@ python -m scripts.hash_password "new-password"
 ```powershell
 $env:HOLOBOX_BACKEND_URL = "http://192.0.2.10:8000"   # use the MacBook's actual IP
 $env:HOLOBOX_KIOSK_TOKEN = "<the kiosk token from backend/.env>"
-$env:HOLOBOX_KIOSK_COURSE = "gpu-architecture"
 npm run electron
 ```
 
 `HOLOBOX_BACKEND_URL` and the credential are never hardcoded in renderer code:
 Electron main reads them from the environment / local settings and injects the
-bearer header in its IPC bridge. The kiosk opens fullscreen; set
-`HOLOBOX_KIOSK_FULLSCREEN=false` for development.
+bearer header in its IPC bridge. Courses are retrieved from the backend and
+selected in the kiosk UI; no course field is required in `kiosk-config.json`.
+The kiosk opens fullscreen; set `HOLOBOX_KIOSK_FULLSCREEN=false` for
+development.
 
 The avatar model is copied to `frontend/public/avatar/business-female-04.vrm` (a
 VRM 0.x / glTF 2.0 binary, MIT licensed) and bundled into `dist/avatar/`. Its

@@ -165,9 +165,9 @@ present, idle status rendered, and a real Ollama answer's Piper WAV reported
 Exact instructions and the LAN/Phase-2 distinction are in `docs/deployment.md`.
 Short version: on the MacBook run Ollama, `uvicorn app.main:app --host 0.0.0.0
 --port 8000`, and `npm run dev:teacher -- --host 0.0.0.0`; find the LAN IP with
-`ipconfig getifaddr en0`; on the Windows PC set `HOLOBOX_BACKEND_URL`,
-`HOLOBOX_KIOSK_TOKEN`, `HOLOBOX_KIOSK_COURSE`, run `npm run build &&
-npm run electron:build && npm run electron`. The MacBook must remain running.
+`ipconfig getifaddr en0`; on the Windows PC set `HOLOBOX_BACKEND_URL` and
+`HOLOBOX_KIOSK_TOKEN` (courses are selected in the kiosk UI), run `npm run build
+&& npm run electron:build && npm run electron`. The MacBook must remain running.
 Windows execution and cross-device LAN traffic were **not** verified here.
 
 ## I. Testing report

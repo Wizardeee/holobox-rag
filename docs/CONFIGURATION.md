@@ -62,13 +62,14 @@ First-run config example:
 ```json
 {
   "backendUrl": "http://192.0.2.10:8000",
-  "kioskToken": "PASTE_KIOSK_TOKEN_FROM_MACBOOK_BACKEND_ENV",
-  "courseId": "gpu-architecture"
+  "kioskToken": "PASTE_KIOSK_TOKEN_FROM_MACBOOK_BACKEND_ENV"
 }
 ```
 
-Replace `192.0.2.10` with the MacBook's actual LAN address. Environment
-variables override the file for advanced launches.
+Only these two fields are used. Courses are fetched from the backend and
+selected in the kiosk UI; older config files with course fields are accepted
+but ignored. Replace `192.0.2.10` with the backend machine's actual LAN
+address. Environment variables override the file for advanced launches.
 
 ## Privacy / security
 

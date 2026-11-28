@@ -16,7 +16,8 @@ Windows by this installer.
 Built artifacts (gitignored, not committed):
 
 ```
-frontend/installer/Holobox-Kiosk-0.1.8-x64.exe   <- CURRENT
+frontend/installer/Holobox-Kiosk-0.1.9-x64.exe   <- CURRENT
+frontend/installer/Holobox-Kiosk-0.1.8-x64.exe   <- previous release, retained
 frontend/installer/Holobox-Kiosk-0.1.7-x64.exe   <- previous release, retained
 frontend/installer/Holobox-Kiosk-0.1.6-x64.exe   <- previous build, retained
 frontend/installer/Holobox-Kiosk-0.1.5-x64.exe   <- previous release, retained
@@ -28,7 +29,8 @@ frontend/installer/Holobox-Kiosk-0.1.0-x64.exe   <- previous release, retained
 ```
 
 - Size: ~98 MB
-- Current SHA-256 (v0.1.8): `7619980e37a695ba317a558ccf1e85122a98e895ae17c4a00db6dc9ad7331192`
+- Current SHA-256 (v0.1.9): `ebbc6bed4dd68f0659e54349068dfe086a48cd260d5a223c4ae2c243bd054496`
+- Previous SHA-256 (v0.1.8): `7619980e37a695ba317a558ccf1e85122a98e895ae17c4a00db6dc9ad7331192`
 - Previous SHA-256 (v0.1.7): `8ad9b169f15c26a59336ba132eafa880e18abee03faf4932172a2dbac5e89a32`
 - Previous SHA-256 (v0.1.3): `cf5b07ab995d384048a24b4603154382d1236c76b9a85341481ea40a0c6a0ece`
 - Previous SHA-256 (v0.1.2): `f38e31885e146c0bd52e44b6c7af2cdb3ba032fd0e04a50d15d4711f87fa6488`
@@ -46,7 +48,7 @@ architecture.
 
 ## Install
 
-1. Copy `Holobox-Kiosk-0.1.8-x64.exe` to the Windows mini PC.
+1. Copy `Holobox-Kiosk-0.1.9-x64.exe` to the Windows mini PC.
 2. Double-click and follow the NSIS prompts. Installation is per-user by
    default; choose a destination when offered.
 3. Start Menu shortcut: **Holobox Kiosk**. A desktop shortcut is also created.
@@ -70,10 +72,13 @@ Open it with Notepad. Example (replace with your MacBook's actual LAN address):
 ```json
 {
   "backendUrl": "http://192.0.2.10:8000",
-  "kioskToken": "PASTE_KIOSK_TOKEN_FROM_MACBOOK_BACKEND_ENV",
-  "courseId": "gpu-architecture"
+  "kioskToken": "PASTE_KIOSK_TOKEN_FROM_MACBOOK_BACKEND_ENV"
 }
 ```
+
+Only these two fields are required. Choose the course in the kiosk UI after
+startup; older config files containing a `courseId` field continue to work and
+the obsolete field is ignored.
 
 - Never use `localhost` or `127.0.0.1` here: those refer to the Windows PC.
 - The `kioskToken` is the value of `HOLOBOX_KIOSK_TOKEN` in

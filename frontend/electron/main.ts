@@ -12,7 +12,6 @@ interface AppSettings {
   ttsVoice: string;
   language: string;
   kioskToken: string;
-  courseId: string;
   personDetectionEnabled: boolean;
   personDetectionConfidence: number;
   personDetectionIntervalMs: number;
@@ -59,7 +58,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   ttsVoice: '',
   language: '',
   kioskToken: process.env.HOLOBOX_KIOSK_TOKEN || localDevKioskToken(),
-  courseId: process.env.HOLOBOX_KIOSK_COURSE || '',
   personDetectionEnabled: process.env.HOLOBOX_PERSON_DETECTION_ENABLED !== 'false',
   personDetectionConfidence: Number(process.env.HOLOBOX_PERSON_CONFIDENCE || 0.5),
   personDetectionIntervalMs: Number(process.env.HOLOBOX_PERSON_INTERVAL_MS || 600),
@@ -142,7 +140,6 @@ function migrateLegacyConfigs(): void {
   }
   const backendUrl = remembered.backendUrl;
   const kioskToken = remembered.kioskToken ?? remembered.apiToken;
-  const courseId = remembered.courseId;
   if (typeof backendUrl === 'string' && backendUrl.trim()) {
     fs.writeFileSync(
       prodConfig,
@@ -150,7 +147,6 @@ function migrateLegacyConfigs(): void {
         {
           backendUrl,
           kioskToken: typeof kioskToken === 'string' ? kioskToken : '',
-          courseId: typeof courseId === 'string' ? courseId : '',
         },
         null,
         2,
@@ -161,7 +157,7 @@ function migrateLegacyConfigs(): void {
 }
 
 const SAFE_KEYS: Array<keyof AppSettings> = [
-  'courseId', 'language', 'voiceInputEnabled', 'voiceOutputEnabled', 'sttModel', 'ttsVoice',
+  'language', 'voiceInputEnabled', 'voiceOutputEnabled', 'sttModel', 'ttsVoice',
   'personDetectionEnabled', 'personDetectionConfidence', 'personDetectionIntervalMs',
   'personPresenceMs', 'personAbsenceMs', 'greetingText',
 ];
@@ -184,7 +180,6 @@ function ensureConfigFile(): void {
       {
         backendUrl: IS_PACKAGED ? '' : DEV_BACKEND_URL,
         kioskToken: '',
-        courseId: process.env.HOLOBOX_KIOSK_COURSE || '',
       },
       null,
       2,
@@ -198,6 +193,8 @@ function loadSettings(): AppSettings {
     SAFE_KEYS.filter((key) => key in legacy).map((key) => [key, legacy[key]]),
   );
   const operator = readJson(configFile());
+  // Obsolete keys from older configs (for example `courseId`) are ignored:
+  // only SAFE_KEYS are ever exposed to the renderer or persisted again.
   // An empty backendUrl in a DEV config means "use the local default"; in a
   // packaged app it deliberately means "not configured" (show setup screen).
   const usableOperator = IS_PACKAGED

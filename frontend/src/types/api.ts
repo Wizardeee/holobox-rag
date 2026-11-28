@@ -75,7 +75,6 @@ export interface ApiOptions {
 export interface AppSettings {
   backendUrlConfigured: boolean;
   configPath: string;
-  courseId: string;
   voiceInputEnabled: boolean;
   voiceOutputEnabled: boolean;
   sttModel: string;

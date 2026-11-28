@@ -5,6 +5,11 @@ import { usePersonDetection } from '../hooks/usePersonDetection';
 import { useSettings } from '../hooks/useSettings';
 import { api, errorMessage } from '../services/api';
 import { studentQuestionCaption } from './transcript';
+import {
+  COURSE_REMOVED_MESSAGE,
+  NO_COURSES_MESSAGE,
+  resolveCourseSelection,
+} from './courseSelection';
 import type { CourseInfo } from '../types/api';
 import './kiosk.css';
 
@@ -20,19 +25,16 @@ const STATUS_LABEL: Record<string, string> = {
 const COURSE_REFRESH_MS = 30_000;
 
 export function KioskApp() {
-  const { settings, update, reload } = useSettings();
+  const { settings, reload } = useSettings();
   const [courses, setCourses] = useState<CourseInfo[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Course choice lives here, not in kiosk-config.json.
   const [courseId, setCourseId] = useState<string | null>(null);
+  const [courseNotice, setCourseNotice] = useState<string | null>(null);
   const [online, setOnline] = useState<boolean | null>(null);
-  const preferredCourse = useRef<string | null>(null);
   const refreshing = useRef(false);
   const conversation = useKioskConversation(courseId, settings?.language || undefined);
-
-  useEffect(() => {
-    if (settings?.courseId && !preferredCourse.current) preferredCourse.current = settings.courseId;
-  }, [settings?.courseId]);
 
   const presenceInFlight = useRef(false);
   const startAutomaticSession = conversation.startAutomaticSession;
@@ -67,8 +69,9 @@ export function KioskApp() {
       ]);
       setCourses(items);
       setCourseId((current) => {
-        const preferred = current ?? preferredCourse.current;
-        return preferred && items.some((item) => item.id === preferred) ? preferred : items[0]?.id ?? null;
+        const selection = resolveCourseSelection(current, items);
+        setCourseNotice(selection.removed ? COURSE_REMOVED_MESSAGE : null);
+        return selection.courseId;
       });
     } catch (reason) {
       setOnline(false);
@@ -126,7 +129,7 @@ export function KioskApp() {
     );
   }
 
-  const courseName = courses.find((item) => item.id === courseId)?.name ?? 'No course selected';
+  const courseName = courses.find((item) => item.id === courseId)?.name ?? NO_COURSES_MESSAGE;
   const questionCaption = studentQuestionCaption({
     userTranscript: conversation.userTranscript,
     assistantResponse: conversation.assistantResponse?.answer ?? '',
@@ -150,15 +153,11 @@ export function KioskApp() {
             onFocus={() => void loadCourses()}
             onMouseDown={() => void loadCourses()}
             onChange={(event) => {
-              const next = event.target.value || null;
-              setCourseId(next);
-              if (next) {
-                preferredCourse.current = next;
-                void update({ courseId: next });
-              }
+              setCourseId(event.target.value || null);
+              setCourseNotice(null);
             }}
           >
-            {courses.length === 0 && <option value="">{coursesLoading ? 'Loading…' : 'No courses available'}</option>}
+            {courses.length === 0 && <option value="">{coursesLoading ? 'Loading…' : 'Choose a course'}</option>}
             {courses.map((course) => (
               <option key={course.id} value={course.id}>{course.name}</option>
             ))}
@@ -214,6 +213,7 @@ export function KioskApp() {
           {statusText}
         </span>
         <span className="kiosk-current-course">Current course: <strong>{courseName}</strong></span>
+        {courseNotice && <span className="kiosk-camera-note">{courseNotice}</span>}
         {(cameraStatus === 'denied' || cameraStatus === 'unavailable') && settings.personDetectionEnabled && (
           <span className="kiosk-camera-note">Camera listening unavailable — you can still ask questions.</span>
         )}

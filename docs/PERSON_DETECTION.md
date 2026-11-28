@@ -91,8 +91,9 @@ small non-technical note appears in the kiosk footer:
 ## Windows mini PC testing (before the installer)
 
 1. Start the backend on the MacBook as usual (`uvicorn ... --host 0.0.0.0`).
-2. On the Windows PC, set `HOLOBOX_BACKEND_URL`, `HOLOBOX_KIOSK_TOKEN`,
-   `HOLOBOX_KIOSK_COURSE` and optionally the detection variables above.
+2. On the Windows PC, set `HOLOBOX_BACKEND_URL` and `HOLOBOX_KIOSK_TOKEN` in
+   `kiosk-config.json` (or the environment) and optionally the detection
+   variables above. Courses are selected in the kiosk UI.
 3. Run `npm run build && npm run electron:build && npm run electron` from the
    `frontend/` folder (installer creation is a separate later task).
 4. Allow camera access when prompted by Windows/Electron (the app also grants

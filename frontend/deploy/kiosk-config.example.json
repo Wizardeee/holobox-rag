@@ -1,5 +1,4 @@
 {
   "backendUrl": "http://192.0.2.10:8000",
-  "kioskToken": "PASTE_KIOSK_TOKEN_FROM_MACBOOK_BACKEND_ENV",
-  "courseId": "gpu-architecture"
+  "kioskToken": "PASTE_KIOSK_TOKEN_FROM_MACBOOK_BACKEND_ENV"
 }

@@ -191,7 +191,7 @@ Full evidence and limitations: `docs/IMPLEMENTATION_REPORT.md`.
 ## Windows kiosk installer (2026-11-25)
 
 - Packaging: added `main`, product name `Holobox Kiosk`, appId `com.holobox.kiosk`, x64 NSIS target, icon, Start Menu + optional desktop shortcuts, `installer/` output. Added `npm run dist:win`.
-- Runtime config: packaged app has no localhost default. Operator edits `%APPDATA%\Holobox Kiosk\kiosk-config.json` (created on first run) for `backendUrl`, `kioskToken`, `courseId`. Main process keeps the token; renderer receives only non-secret settings. Added setup screen, config-file open button, validated IPC and offline status/retry.
+- Runtime config: packaged app has no localhost default. Operator edits `%APPDATA%\Holobox Kiosk\kiosk-config.json` (created on first run) for `backendUrl`, `kioskToken` (the historical `courseId` field was later removed; courses are now selected in the kiosk UI). Main process keeps the token; renderer receives only non-secret settings. Added setup screen, config-file open button, validated IPC and offline status/retry.
 - Built installer: `frontend/installer/Holobox-Kiosk-0.1.0-x64.exe` (~98 MB, SHA-256 `66c3728a...08c1d`, NSIS/PE32 stub, x64 app binary). Verified asar contains avatar, MediaPipe model/WASM, React/Three bundles and no backend/.env/AI files or secrets.
 - Verification: backend 88 tests pass; frontend build/typecheck/contract check pass; first-run setup screen and generated config verified; configured launch shows courses and avatar; renderer sees no token/URL; backend-offline shows clear status without crash; installer built successfully on macOS. Windows hardware execution NOT performed (no Windows PC here).
 
